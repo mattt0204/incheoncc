@@ -1,0 +1,11 @@
+.cursor
+.venv
+bin
+lib
+
+.env
+
+CACHEDIR.TAG
+
+pyvenv.cfg
+
