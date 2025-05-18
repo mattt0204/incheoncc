@@ -39,7 +39,7 @@ class PickDateModel(QAbstractListModel):
     def rowCount(self, parent=None):
         return len(self._dates)
 
-    def set_dates(self, dates):
+    def set_dates(self):
         self.beginResetModel()
         self._dates = self.make_available_dates()
         self.endResetModel()

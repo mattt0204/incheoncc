@@ -15,4 +15,4 @@ class PickDatetimeViewModel(QObject):
 
     def load_dates(self):
         # 가능한 날짜 선택하게 하기
-        pass
+        self.dates_model.set_dates()
