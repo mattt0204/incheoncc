@@ -9,3 +9,5 @@ CACHEDIR.TAG
 
 pyvenv.cfg
 
+
+*.pyc

@@ -49,14 +49,14 @@ class PickDateModel(QAbstractListModel):
         # isoweekday() 월요일이 1, 일요일이 7
         today = arrow.now().to("Asia/Seoul")
         # 화,수요일이면
-        if today.isoweekday() == 2 or today.weekday() == 3:
+        if today.isoweekday() == 2 or today.isoweekday() == 3:
             print(f"화,수요일 {today.isoweekday()}")
             dates = self.__make_dates_by_tuesday()
         # 목,금,토,일,월요일이면
         elif today.isoweekday() in [1, 4, 5, 6, 7]:
             print(f"목,금,토,일,월요일 {today.isoweekday()}")
             dates = self.__make_23days_on_thursday()
-
+            print(f"dates: {dates}")
         return dates
 
     def __make_dates_by_tuesday(self) -> list[str]:
@@ -90,7 +90,12 @@ class PickDateModel(QAbstractListModel):
 
     def __get_holidays_between_next20days_and_next_saturday(self) -> list[str]:
         """2-3주차의 주일(weekdays) 중 공휴일"""
-        before_tuesday = arrow.now().shift(weekday=1).shift(days=-7)
+
+        before_tuesday = arrow.now().shift(weekday=1)
+        # 수요일이라면
+        if arrow.now().isoweekday() == 3:
+            before_tuesday = arrow.now().shift(weekday=1).shift(days=-7)
+
         next_19days_yyyymmdd = before_tuesday.shift(days=19).strftime("%Y%m%d")
         next_saturday_yyyymmdd = before_tuesday.shift(days=25).strftime("%Y%m%d")
         available_dates: list[str] = []
@@ -103,8 +108,10 @@ class PickDateModel(QAbstractListModel):
 
     def __make_23days_on_thursday(self):
         """2주 + 다음주차의 주일까지"""
+        before_thursday = arrow.now().shift(weekday=3)
+        if arrow.now().isoweekday() != 4:
+            before_thursday = arrow.now().shift(weekday=3).shift(days=-7)
 
-        before_thursday = arrow.now().shift(weekday=3).shift(days=-7)
         available_dates = []
         range_days = 23
         for i in range(range_days):

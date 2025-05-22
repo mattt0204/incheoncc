@@ -13,6 +13,7 @@ if __name__ == "__main__":
     app = QApplication([])
     scraper = IncheonCCScraper()
     view_model = PickDatetimeViewModel(scraper)
+    view_model.load_dates()
     widget = PickDatetimeView(app, view_model)
     widget.show()
     app.exec()
