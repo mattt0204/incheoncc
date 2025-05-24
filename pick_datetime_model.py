@@ -32,7 +32,7 @@ class PickDateModel(QAbstractListModel):
         super().__init__()
         self._dates = dates or []
 
-    def data(self, index, role):
+    def data(self, index, role) -> str | None:
         if role == Qt.ItemDataRole.DisplayRole:
             return self._dates[index.row()]
 

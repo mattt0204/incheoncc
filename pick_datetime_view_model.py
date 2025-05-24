@@ -6,18 +6,32 @@ from pick_datetime_model import PickDateModel, PickTimeRange, TimeRangeEndpoint
 
 
 class PickDatetimeViewModel(QObject):
+    # 추후 선택한 Input 값에 대한 Signal 사용으로 view에 업데이트
+
     def __init__(self, scraper):
         self.scraper = scraper
         self.dates_model = PickDateModel()
         self.time_range_model = PickTimeRange(
-            start=TimeRangeEndpoint(hour=7, minute=0),
-            end=TimeRangeEndpoint(hour=9, minute=0),
+            start=TimeRangeEndpoint(hour=7, minute=30),
+            end=TimeRangeEndpoint(hour=8, minute=30),
         )
+        self.selected_date = ""
         self.load_dates()
 
     def load_dates(self):
         # 가능한 날짜 선택하게 하기
         self.dates_model.set_dates()
+
+    def set_selected_date(self, date: str):
+        self.selected_date = date
+
+    def set_start_time(self, hour: int, minute: int):
+        start_time = TimeRangeEndpoint(hour=hour, minute=minute)
+        self.time_range_model.start = start_time
+
+    def set_end_time(self, hour: int, minute: int):
+        end_time = TimeRangeEndpoint(hour=hour, minute=minute)
+        self.time_range_model.end = end_time
 
 
 class DateWithWeekdayDelegate(QStyledItemDelegate):

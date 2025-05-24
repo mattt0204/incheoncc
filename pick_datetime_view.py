@@ -8,11 +8,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from pick_datetime_view_model import DateWithWeekdayDelegate
+from pick_datetime_view_model import DateWithWeekdayDelegate, PickDatetimeViewModel
 
 
 class PickDatetimeView(QWidget):
-    def __init__(self, app, view_model, parent=None):
+    def __init__(self, app, view_model: PickDatetimeViewModel, parent=None):
         super().__init__(parent)
         self.app = app
         self.view_model = view_model
@@ -84,7 +84,20 @@ class PickDatetimeView(QWidget):
 
     def on_ok_clicked(self):
         """선택한 날짜와 TimeRange를 전달하여 예약"""
-        pass
+        selected_indexes = self.list_view.selectedIndexes()
+        if not selected_indexes:
+            return
+        selected_yyyy_mm_dd = self.view_model.dates_model.data(selected_indexes[0], 0)
+        if not selected_yyyy_mm_dd:
+            return
+        selected_start_hour = self.start_hour_combo.currentIndex()
+        selected_start_minute = self.start_minute_combo.currentIndex()
+        selected_end_hour = self.end_hour_combo.currentIndex()
+        selected_end_minute = self.end_minute_combo.currentIndex()
+
+        self.view_model.set_selected_date(selected_yyyy_mm_dd)
+        self.view_model.set_start_time(selected_start_hour, selected_start_minute)
+        self.view_model.set_end_time(selected_end_hour, selected_end_minute)
 
     def on_cancel_clicked(self):
         self.app.quit()
