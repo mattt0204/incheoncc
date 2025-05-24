@@ -4,11 +4,6 @@ from pick_datetime_view import PickDatetimeView
 from pick_datetime_view_model import PickDatetimeViewModel
 from scraper import IncheonCCScraper
 
-
-def main():
-    print("Hello, World!")
-
-
 if __name__ == "__main__":
     app = QApplication([])
     scraper = IncheonCCScraper()

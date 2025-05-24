@@ -41,32 +41,29 @@ class PickDateModel(QAbstractListModel):
 
     def set_dates(self):
         self.beginResetModel()
-        self._dates = self.make_available_dates()
+        self._dates = self.create_available_dates()
         self.endResetModel()
 
-    def make_available_dates(self) -> list[str]:
+    def create_available_dates(self) -> list[str]:
         dates: list[str] = []
         # isoweekday() 월요일이 1, 일요일이 7
         today = arrow.now().to("Asia/Seoul")
         # 화,수요일이면
         if today.isoweekday() == 2 or today.isoweekday() == 3:
-            print(f"화,수요일 {today.isoweekday()}")
-            dates = self.__make_dates_by_tuesday()
+
+            dates = self.__make_dates_by_tuesday_rules()
         # 목,금,토,일,월요일이면
         elif today.isoweekday() in [1, 4, 5, 6, 7]:
-            print(f"목,금,토,일,월요일 {today.isoweekday()}")
-            dates = self.__make_23days_on_thursday()
-            print(f"dates: {dates}")
+
+            dates = self.__make_dates_by_thursday_rules()
         return dates
 
-    def __make_dates_by_tuesday(self) -> list[str]:
+    def __make_dates_by_tuesday_rules(self) -> list[str]:
 
         days_between_last_thuesday_and_next_19days = (
-            self.__get_last_thuesday_next_19days()
+            self.__make_dates_from_today_to_3rd_weekends()
         )
-        holidays_between_2w_and_3w = (
-            self.__get_holidays_between_next20days_and_next_saturday()
-        )
+        holidays_between_2w_and_3w = self.__find_holidays_of_3rd_week_in_json()
         available_dates = days_between_last_thuesday_and_next_19days.extend(
             holidays_between_2w_and_3w
         )
@@ -76,45 +73,81 @@ class PickDateModel(QAbstractListModel):
 
         return available_dates
 
-    def __get_last_thuesday_next_19days(self) -> list[str]:
+    def __make_dates_from_today_to_3rd_weekends(self) -> list[str]:
         """지난 화요일과 다음 19일까지의 날짜(2주후 주말까지)"""
-        range_days = 20
-        available_dates = []
-        before_tuesday = arrow.now().shift(weekday=1).shift(days=-7)
-        # 0~19
-        for day in range(range_days):
-            yyyymmdd = before_tuesday.shift(days=day).strftime("%Y%m%d")
-            available_dates.append(yyyymmdd)
+        # 로직 테스트 필요
+        is_today_tuesday = arrow.now().shift(weekday=1)
+        start_day = is_today_tuesday
+        end_day = start_day.shift(days=19)
+
+        if arrow.now().isoweekday() == 2:
+            previous_tuesday = arrow.now().shift(weekday=1).shift(days=-7)
+            start_day = previous_tuesday.shift(days=1)
+            end_day = start_day.shift(days=19 - 1)
+
+        # 오늘부터 3주차 주말까지
+        available_dates = [
+            start_day.shift(days=i).strftime("%Y%m%d")
+            for i in range((end_day - start_day).days + 1)
+        ]
 
         return available_dates
 
-    def __get_holidays_between_next20days_and_next_saturday(self) -> list[str]:
-        """2-3주차의 주일(weekdays) 중 공휴일"""
+    def __find_holidays_of_3rd_week_in_json(self) -> list[str]:
+        """3주차의 주일(weekdays) 중 공휴일"""
 
-        before_tuesday = arrow.now().shift(weekday=1)
-        # 수요일이라면
+        # 화요일
+        tuesday = arrow.now().shift(weekday=1)
+        # 수요일이라면, 이전 화요일
         if arrow.now().isoweekday() == 3:
-            before_tuesday = arrow.now().shift(weekday=1).shift(days=-7)
+            tuesday = arrow.now().shift(weekday=1).shift(days=-7)
 
-        next_19days_yyyymmdd = before_tuesday.shift(days=19).strftime("%Y%m%d")
-        next_saturday_yyyymmdd = before_tuesday.shift(days=25).strftime("%Y%m%d")
-        available_dates: list[str] = []
+        monday_of_3rd_weeks_yyyymmdd = tuesday.shift(days=18).strftime("%Y%m%d")
+        saturday_of_3rd_weeks_yyyymmdd = tuesday.shift(days=24).strftime("%Y%m%d")
+        holidays_of_3rd_week: list[str] = []
+
         with open("holidays.json", "r", encoding="utf-8") as f:
             dates = json.load(f)
             for date in dates:
-                if next_19days_yyyymmdd < date["yyyymmdd"] < next_saturday_yyyymmdd:
-                    available_dates.append(date["yyyymmdd"])
-        return available_dates
+                if (
+                    monday_of_3rd_weeks_yyyymmdd
+                    <= date["yyyymmdd"]
+                    <= saturday_of_3rd_weeks_yyyymmdd
+                ):
+                    holidays_of_3rd_week.append(date["yyyymmdd"])
+        return holidays_of_3rd_week
 
-    def __make_23days_on_thursday(self):
-        """2주 + 다음주차의 주일까지"""
-        before_thursday = arrow.now().shift(weekday=3)
-        if arrow.now().isoweekday() != 4:
-            before_thursday = arrow.now().shift(weekday=3).shift(days=-7)
+    def __make_dates_by_thursday_rules(self):
+        """목요일 9시 규칙, 오늘부터 2주 + 다음주차의 주일까지"""
+        # 목
+        # weekday 월 0, 화 1, 수 2, 목 3, 금 4, 토 5, 일 6
+        is_today_thursday = arrow.now().shift(weekday=3)
+        start_day = is_today_thursday
+        end_day = start_day.shift(days=22)
 
-        available_dates = []
-        range_days = 23
-        for i in range(range_days):
-            yyyymmdd = before_thursday.shift(days=i).strftime("%Y%m%d")
-            available_dates.append(yyyymmdd)
+        previous_thursday = arrow.now().shift(weekday=3).shift(days=-7)
+        # isoweekday금(월:1,화:2,수:3,목:4,금:5,토:6,일:7)
+        if arrow.now().isoweekday() == 5:
+            start_day = previous_thursday.shift(days=1)
+            end_day = start_day.shift(days=22 - 1)
+
+        # 토
+        elif arrow.now().isoweekday() == 6:
+            start_day = previous_thursday.shift(days=2)
+            end_day = start_day.shift(days=22 - 2)
+        # 일
+        elif arrow.now().isoweekday() == 7:
+            start_day = previous_thursday.shift(days=3)
+            end_day = start_day.shift(days=22 - 3)
+        # 월
+        elif arrow.now().isoweekday() == 1:
+            start_day = previous_thursday.shift(days=4)
+            end_day = start_day.shift(days=22 - 4)
+
+        # 오늘부터 3주차 주일(weekdays)까지
+        available_dates = [
+            start_day.shift(days=i).strftime("%Y%m%d")
+            for i in range((end_day - start_day).days + 1)
+        ]
+
         return available_dates
