@@ -6,7 +6,7 @@ from PySide6.QtCore import QAbstractListModel, Qt
 
 
 @dataclass
-class TimeRangeEndpoint:
+class TimeTippingPoint:
     hour: int
     minute: int
 
@@ -19,8 +19,9 @@ class TimeRangeEndpoint:
 
 @dataclass
 class PickTimeRange:
-    start: TimeRangeEndpoint
-    end: TimeRangeEndpoint
+    start: TimeTippingPoint
+    end: TimeTippingPoint
+    priority_time: TimeTippingPoint
 
 
 class PickDateModel(QAbstractListModel):

@@ -2,7 +2,7 @@ import arrow
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QStyledItemDelegate
 
-from pick_datetime_model import PickDateModel, PickTimeRange, TimeRangeEndpoint
+from pick_datetime_model import PickDateModel, PickTimeRange, TimeTippingPoint
 
 
 class PickDatetimeViewModel(QObject):
@@ -12,8 +12,9 @@ class PickDatetimeViewModel(QObject):
         self.scraper = scraper
         self.dates_model = PickDateModel()
         self.time_range_model = PickTimeRange(
-            start=TimeRangeEndpoint(hour=7, minute=30),
-            end=TimeRangeEndpoint(hour=8, minute=30),
+            start=TimeTippingPoint(hour=7, minute=30),
+            end=TimeTippingPoint(hour=8, minute=30),
+            priority_time=TimeTippingPoint(hour=8, minute=00),
         )
         self.selected_date = ""
         self.load_dates()
@@ -26,18 +27,21 @@ class PickDatetimeViewModel(QObject):
         self.selected_date = date
 
     def set_start_time(self, hour: int, minute: int):
-        start_time = TimeRangeEndpoint(hour=hour, minute=minute)
+        start_time = TimeTippingPoint(hour=hour, minute=minute)
         self.time_range_model.start = start_time
 
     def set_end_time(self, hour: int, minute: int):
-        end_time = TimeRangeEndpoint(hour=hour, minute=minute)
+        end_time = TimeTippingPoint(hour=hour, minute=minute)
         self.time_range_model.end = end_time
+
+    def set_priority_time(self, hour: int, minute: int):
+        priority_time = TimeTippingPoint(hour=hour, minute=minute)
+        self.time_range_model.priority_time = priority_time
 
     def reserve_course(self):
         self.scraper.reserve_course(
-            date=self.selected_date,
-            start_time=self.time_range_model.start,
-            end_time=self.time_range_model.end,
+            yyyy_mm_dd=self.selected_date,
+            time_range_model=self.time_range_model,
         )
 
 

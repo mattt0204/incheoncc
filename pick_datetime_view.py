@@ -22,6 +22,7 @@ class PickDatetimeView(QWidget):
         self.setWindowTitle("날짜와 시간 선택")
         self.init_date_section()
         self.init_start_time_section()
+        self.init_priority_time_section()
         self.init_end_time_section()
         self.init_button_section()
         self.init_layout()
@@ -35,8 +36,8 @@ class PickDatetimeView(QWidget):
         self.list_view.setItemDelegate(self.delegate)
 
     def init_start_time_section(self):
-        self.start_hour_label = QLabel("시간")
-        self.start_minute_label = QLabel("분")
+        self.start_hour_label = QLabel("시작하는 시간")
+        self.start_minute_label = QLabel("시작하는 분")
         self.start_minute_combo = QComboBox()
         self.start_hour_combo = QComboBox()
         self.start_hour_combo.addItems([str(i) for i in range(24)])
@@ -45,14 +46,24 @@ class PickDatetimeView(QWidget):
         self.start_minute_combo.setCurrentIndex(30)
 
     def init_end_time_section(self):
-        self.end_hour_label = QLabel("시간")
-        self.end_minute_label = QLabel("분")
+        self.end_hour_label = QLabel("마지막 시간")
+        self.end_minute_label = QLabel("마지막 분")
         self.end_minute_combo = QComboBox()
         self.end_hour_combo = QComboBox()
         self.end_hour_combo.addItems([str(i) for i in range(24)])
         self.end_minute_combo.addItems([str(i) for i in range(60)])
         self.end_hour_combo.setCurrentIndex(8)
         self.end_minute_combo.setCurrentIndex(30)
+
+    def init_priority_time_section(self):
+        self.priority_hour_label = QLabel("우선순위 시간")
+        self.priority_minute_label = QLabel("우선순위 분")
+        self.priority_hour_combo = QComboBox()
+        self.priority_minute_combo = QComboBox()
+        self.priority_hour_combo.addItems([str(i) for i in range(24)])
+        self.priority_minute_combo.addItems([str(i) for i in range(60)])
+        self.priority_hour_combo.setCurrentIndex(8)
+        self.priority_minute_combo.setCurrentIndex(00)
 
     def init_button_section(self):
         self.cancel_button = QPushButton("취소")
@@ -69,6 +80,10 @@ class PickDatetimeView(QWidget):
         self.main_layout.addWidget(self.start_hour_combo)
         self.main_layout.addWidget(self.start_minute_label)
         self.main_layout.addWidget(self.start_minute_combo)
+        self.main_layout.addWidget(self.priority_hour_label)
+        self.main_layout.addWidget(self.priority_hour_combo)
+        self.main_layout.addWidget(self.priority_minute_label)
+        self.main_layout.addWidget(self.priority_minute_combo)
         self.main_layout.addWidget(self.end_hour_label)
         self.main_layout.addWidget(self.end_hour_combo)
         self.main_layout.addWidget(self.end_minute_label)
@@ -94,11 +109,17 @@ class PickDatetimeView(QWidget):
         selected_start_minute = self.start_minute_combo.currentIndex()
         selected_end_hour = self.end_hour_combo.currentIndex()
         selected_end_minute = self.end_minute_combo.currentIndex()
-
+        selected_priority_hour = self.priority_hour_combo.currentIndex()
+        selected_priority_minute = self.priority_minute_combo.currentIndex()
+        # TODO: start와 end 사이에 priority_time이 있는지 확인 하고 없다면 에러 문구 발생
         self.view_model.set_selected_date(selected_yyyy_mm_dd)
         self.view_model.set_start_time(selected_start_hour, selected_start_minute)
         self.view_model.set_end_time(selected_end_hour, selected_end_minute)
+        self.view_model.set_priority_time(
+            selected_priority_hour, selected_priority_minute
+        )
         self.view_model.reserve_course()
+        # TODO: 예약 확인 페이지에서 예약이 완료되었는지 확인하고 완료되었다면 예약 완료 문구 발생
 
     def on_cancel_clicked(self):
         self.app.quit()
