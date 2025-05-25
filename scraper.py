@@ -40,6 +40,10 @@ class IncheonCCScraper:
     ):
         self.__go_to_login_page()
         self.__login()
+        # TODO: 9시에 cron job and retry 추가 필요
+        self.__go_to_pointdate_page(yyyy_mm_dd)
+        self.__make_courses_applied_priority(time_range_model)
+        print(self.courses_of_priority)
 
     def __login(self):
         # 환경변수에서 로그인 정보 읽기
@@ -90,19 +94,70 @@ class IncheonCCScraper:
                 cal_live_date.click()
                 break
 
-    def __select_course(self, time_range_model: PickTimeRange):
+    def __make_courses_applied_priority(self, time_range_model: PickTimeRange):
         """
-        1. start_end 사이에 있는 모든 코스를 수집한다.
+        1. start_end 사이에 있는 모든 코스 course_times_scrpaed 수집한다.
         2. priority_time에 가까운 코스 순으로 배열을 sort 합니다.
-        3. 우선순위 배열 순서대로 신청합니다. 에러 발생시 코스 선택 페이지로 이동해서, 다시 실행합니다.
+
         """
-        pass
+        wait = WebDriverWait(self.driver, 10)
+        table = wait.until(
+            EC.presence_of_element_located(
+                (
+                    By.CLASS_NAME,
+                    "cm_time_list_tbl",
+                )
+            )
+        )
+        rows = table.find_elements(By.TAG_NAME, "tr")[1:]  # 헤더 행 제외
+        # row 모두 수집하지 않은 이유는 어차피 stale 걸릴 거라서
+
+        # 결과를 저장할 list
+        course_times_scrpaed = []
+
+        # 각 행을 순회하며 데이터 추출
+        for row in rows:
+            cells = row.find_elements(By.TAG_NAME, "td")
+            if len(cells) >= 7:  # 모든 컬럼이 있는지 확인
+                course_time = cells[2].text
+                course_times_scrpaed.append(course_time)
+
+        def time_to_minutes(tstr):
+            h, m = map(int, tstr.split(":"))
+            return h * 60 + m
+
+        start_minutes = time_range_model.start.hour * 60 + time_range_model.start.minute
+        end_minutes = time_range_model.end.hour * 60 + time_range_model.end.minute
+        priority_minutes = (
+            time_range_model.priority_time.hour * 60
+            + time_range_model.priority_time.minute
+        )
+        filtered = [
+            course_time
+            for course_time in course_times_scrpaed
+            if time_to_minutes(course_time) >= start_minutes
+            and time_to_minutes(course_time) <= end_minutes
+        ]
+        sorted_course_times = sorted(
+            filtered,
+            key=lambda x: abs(time_to_minutes(x) - priority_minutes),
+        )
+
+        self.courses_of_priority = sorted_course_times
 
     def __reserve_course(self, yyyy_mm_dd: str, selected_time: str):
         """yyyy_mm_dd 형식의 날짜와 time_range_model을 이용하여 예약을 진행합니다.
         selected_time: 05:06
+        3. 우선순위 배열 순서대로 신청합니다. 에러 발생시 코스 선택 페이지로 이동해서, 다시 실행합니다.
         실패시 에러 페이지 확인 -> 다시 실시간 캘린더 눌러서, 코스 선택페이지로 이동해야함
         """
+        if not self.courses_of_priority:
+            raise RuntimeError("코스가 없습니다.")
+
+        for course in self.courses_of_priority:
+            self.__reserve_course_by_time(course)
+
+    def __reserve_course_by_time(self, selected_time: str):
         pass
 
     def __check_reservation_complete(self, yyyy_mm_dd: str, point_time: str):
