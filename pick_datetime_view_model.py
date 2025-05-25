@@ -33,6 +33,13 @@ class PickDatetimeViewModel(QObject):
         end_time = TimeRangeEndpoint(hour=hour, minute=minute)
         self.time_range_model.end = end_time
 
+    def reserve_course(self):
+        self.scraper.reserve_course(
+            date=self.selected_date,
+            start_time=self.time_range_model.start,
+            end_time=self.time_range_model.end,
+        )
+
 
 class DateWithWeekdayDelegate(QStyledItemDelegate):
     def __init__(self, view_model, parent=None):

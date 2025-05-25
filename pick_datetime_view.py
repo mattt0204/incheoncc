@@ -98,6 +98,7 @@ class PickDatetimeView(QWidget):
         self.view_model.set_selected_date(selected_yyyy_mm_dd)
         self.view_model.set_start_time(selected_start_hour, selected_start_minute)
         self.view_model.set_end_time(selected_end_hour, selected_end_minute)
+        self.view_model.reserve_course()
 
     def on_cancel_clicked(self):
         self.app.quit()

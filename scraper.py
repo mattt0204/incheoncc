@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
+from pick_datetime_model import TimeRangeEndpoint
 from user_agent import get_random_user_agent
 
 
@@ -25,3 +26,8 @@ class IncheonCCScraper:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         return driver
+
+    def reserve_course(
+        self, date: str, start_time: TimeRangeEndpoint, end_time: TimeRangeEndpoint
+    ):
+        pass
