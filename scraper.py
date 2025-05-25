@@ -158,6 +158,7 @@ class IncheonCCScraper:
             self.__reserve_course_by_time(course)
 
     def __reserve_course_by_time(self, selected_time: str):
+        """TABLE 따라서 같은 시간이 있다면, 예약합니다. 예약 후 예약 확인 페이지로 이동합니다."""
         pass
 
     def __check_reservation_complete(self, yyyy_mm_dd: str, point_time: str):
