@@ -11,3 +11,5 @@ pyvenv.cfg
 
 
 *.pyc
+
+.ipynb_checkpoints
