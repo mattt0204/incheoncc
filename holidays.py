@@ -3,6 +3,8 @@ import os
 import requests
 from dotenv import load_dotenv
 
+from custom_logger import logger
+
 load_dotenv()
 
 
@@ -50,10 +52,10 @@ def get_holidays():
             json.dump(holidays, f, ensure_ascii=False, indent=2)
 
         # 결과 출력, 추후 log 파일로 저장
-        print("holidays.json 파일이 생성되었습니다.")
+        logger.info("holidays.json 파일이 생성되었습니다.")
 
     except Exception as e:
-        print(e)  # TODO: 추후 로그파일로 기록
+        logger.error(e)
 
 
 if __name__ == "__main__":

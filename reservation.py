@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from custom_logger import logger
 from pick_datetime_model import TimePoint, TimeRange
 
 
@@ -155,16 +156,18 @@ class SessionPostReservation(ReservationStrategy):
             payload = self.__make_payload(yyyy_mm_dd, time_point)
             response = session.post(reserve_ok_url, data=payload)
             if "OK" in response.text:
-                print(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
+                logger.info(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
                 break
             elif "오류" in response.text:
-                print(f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간")
+                logger.info(
+                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간"
+                )
             elif "동시예약" in response.text:
-                print(
+                logger.info(
                     f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 동시예약으로 인한 실패"
                 )
             elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text:
-                print(
+                logger.info(
                     f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
                 )
 

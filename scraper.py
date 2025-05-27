@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
+from custom_logger import logger
 from pick_datetime_model import TimeRange
 from reservation import Reservation, SessionPostReservation
 from user_agent import get_random_user_agent
@@ -43,7 +44,7 @@ class IncheonCCScraper:
             self.__go_to_login_page()
             self.__login()
         except UnexpectedAlertPresentException as e:
-            print("이미 로그인 했다면, alert 에러 뜨지만, 무시")
+            logger.info("이미 로그인 경우, alert 에러 뜨지만, 무시해도 관계 없음")
 
         # 작동하지 않음
         self.__close_popup()
