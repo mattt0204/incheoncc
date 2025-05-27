@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from typing import List
 
 import arrow
 from PySide6.QtCore import QAbstractListModel, Qt
@@ -25,6 +26,28 @@ class TimeRange:
     start: TimePoint
     end: TimePoint
     priority_time: TimePoint
+
+    def filter_times_in_range(self, timepoints: List[TimePoint]) -> List[TimePoint]:
+        return []
+
+    def make_all_timepoints_in_range(self) -> List[TimePoint]:
+        result = []
+        start_minutes = self.start.hour * 60 + self.start.minute
+        end_minutes = self.end.hour * 60 + self.end.minute
+        for m in range(start_minutes, end_minutes + 1):
+            hour = m // 60
+            minute = m % 60
+            result.append(TimePoint(hour, minute))
+        return result
+
+    def make_sorted_timepoints_by_priority(self) -> List[TimePoint]:
+        def diff(tp: TimePoint):
+            return abs(
+                (tp.hour * 60 + tp.minute)
+                - (self.priority_time.hour * 60 + self.priority_time.minute)
+            )
+
+        return sorted(self.make_all_timepoints_in_range(), key=diff)
 
 
 class PickDateModel(QAbstractListModel):
