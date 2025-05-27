@@ -1,3 +1,4 @@
+import os
 import re
 from abc import ABC, abstractmethod
 
@@ -7,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from pick_datetime_model import TimeRange
+from pick_datetime_model import TimePoint, TimeRange
 
 
 # 전략 인터페이스
@@ -24,12 +25,8 @@ class ReservationStrategy(ABC):
 # 1. DoM API 방식 (셀레니움 등)
 class DomApiReservation(ReservationStrategy):
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
-        driver = webdriver.Chrome()
-        driver.get("https://example.com/reserve")
-        # 로그인, 폼 입력, 버튼 클릭 등 실제 브라우저 조작
-        # driver.find_element(...).send_keys(user)
-        # driver.find_element(...).click()
-        driver.quit()
+        # self.driver
+        pass
 
     def __go_to_pointdate_page(self, yyyy_mm_dd):
         """yyyy_mm_dd 형식의 날짜를 클릭하여 페이지를 이동합니다."""
@@ -148,13 +145,30 @@ class DomApiReservation(ReservationStrategy):
 
 # 2. Session Post 방식 (requests 등)
 class SessionPostReservation(ReservationStrategy):
+    """Session Post 방식으로 예약을 진행합니다."""
+
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+        tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
+        session = self.__preload_session()
+        reserve_ok_url = "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
+        for idx, time_point in enumerate(tps_priority, start=1):
+            payload = self.__make_payload(yyyy_mm_dd, time_point)
+            response = session.post(reserve_ok_url, data=payload)
+            if "OK" in response.text:
+                print(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
+                break
+            elif "오류" in response.text:
+                print(f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간")
+            elif "동시예약" in response.text:
+                print(
+                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 동시예약으로 인한 실패"
+                )
+            elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text:
+                print(
+                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
+                )
 
-        seesion = self.__preload_session()
-
-        # print(f"{}에 Session Post로 예약 시도, 결과: {response.status_code}")
-
-    def __preload_session(self):
+    def __preload_session(self) -> requests.Session:
         # Selenium에서 로그인 등 필요한 쿠키 가져오기
         selenium_cookies = self.driver.get_cookies()
 
@@ -164,10 +178,44 @@ class SessionPostReservation(ReservationStrategy):
         # Selenium에서 가져온 세션 쿠키를 requests 세션에 추가
         for cookie in selenium_cookies:
             session.cookies.set(cookie["name"], cookie["value"])
+        return session
+
+    def __make_payload(
+        self, yyyy_mm_dd: str, timepoint: TimePoint, point_id_out_in="1"
+    ):
+        # environ
+        hand_tel1 = os.environ.get("HAND_TEL1")
+        hand_tel2 = os.environ.get("HAND_TEL2")
+        hand_tel3 = os.environ.get("HAND_TEL3")
+        # POST 요청에 사용할 데이터
+        form_data = {
+            "cmd": "ins",
+            "cmval": "0",
+            "cmrtype": "N",
+            "calltype": "AJAX",
+            "gonexturl": "/GolfRes/onepage/my_golfreslist.asp",
+            "pointdate": yyyy_mm_dd,
+            "openyn": "1",
+            "dategbn": "6",
+            "pointid": point_id_out_in,
+            "pointtime": timepoint.strf_hhmm(),
+            "flagtype": "I",
+            "punish_cd": "UNABLE",
+            "self_r_yn": "N",
+            "res_gubun": "N",
+            "usrmemcd": "12",
+            "memberno": "12061000",
+            "hand_tel1": hand_tel1,
+            "hand_tel2": hand_tel2,
+            "hand_tel3": hand_tel3,
+        }
+        return form_data
 
 
 # Context
 class Reservation:
+    """예약 총괄 책임 담당"""
+
     def __init__(self, strategy: ReservationStrategy):
         self.strategy = strategy
 
@@ -176,11 +224,3 @@ class Reservation:
 
     def make_reservation(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         self.strategy.reserve(yyyy_mm_dd, time_range_model)
-
-
-# # 사용 예시
-# reservation = Reservation(DomApiReservation())
-# reservation.make_reservation("홍길동", "10:00")
-
-# reservation.set_strategy(SessionPostReservation())
-# reservation.make_reservation("홍길동", "11:00")

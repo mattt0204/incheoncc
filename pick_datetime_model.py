@@ -79,7 +79,6 @@ class PickDateModel(QAbstractListModel):
         today = arrow.now().to("Asia/Seoul")
         # 화,수요일이면
         if today.isoweekday() == 2 or today.isoweekday() == 3:
-
             dates = self.__make_dates_by_tuesday_rules()
         # 목,금,토,일,월요일이면
         elif today.isoweekday() in [1, 4, 5, 6, 7]:
@@ -93,14 +92,11 @@ class PickDateModel(QAbstractListModel):
             self.__make_dates_from_today_to_3rd_weekends()
         )
         holidays_between_2w_and_3w = self.__find_holidays_of_3rd_week_in_json()
-        available_dates = days_between_last_thuesday_and_next_19days.extend(
+        available_dates = set(days_between_last_thuesday_and_next_19days) | set(
             holidays_between_2w_and_3w
         )
-
-        if available_dates is None:
-            return []
-
-        return available_dates
+        sorted_dates = list(sorted(available_dates))
+        return sorted_dates
 
     def __make_dates_from_today_to_3rd_weekends(self) -> list[str]:
         """지난 화요일과 다음 19일까지의 날짜(2주후 주말까지)"""
@@ -109,7 +105,8 @@ class PickDateModel(QAbstractListModel):
         start_day = is_today_tuesday
         end_day = start_day.shift(days=19)
 
-        if arrow.now().isoweekday() == 2:
+        # 수요일이라면
+        if arrow.now().isoweekday() == 3:
             previous_tuesday = arrow.now().shift(weekday=1).shift(days=-7)
             start_day = previous_tuesday.shift(days=1)
             end_day = start_day.shift(days=19 - 1)

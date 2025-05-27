@@ -2,6 +2,7 @@
 import os
 
 from selenium import webdriver
+from selenium.common import UnexpectedAlertPresentException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -37,14 +38,22 @@ class IncheonCCScraper:
         yyyy_mm_dd: str,
         time_range_model: TimeRange,
     ):
-        self.__go_to_login_page()
-        self.__login()
+
+        try:
+            self.__go_to_login_page()
+            self.__login()
+        except UnexpectedAlertPresentException as e:
+            print("이미 로그인 했다면, alert 에러 뜨지만, 무시")
+
+        # 작동하지 않음
+        self.__close_popup()
         strategy = SessionPostReservation(self.driver)
         reservation = Reservation(strategy)
         reservation.make_reservation(yyyy_mm_dd, time_range_model)
 
     def __login(self):
         # 환경변수에서 로그인 정보 읽기
+
         login_id = os.environ.get("LOGIN_ID")
         login_pw = os.environ.get("LOGIN_PW")
         if not login_id or not login_pw:
@@ -65,6 +74,7 @@ class IncheonCCScraper:
         return_url = "?returnurl=/pagesite/reservation/live.asp?"
         if login_path in self.driver.current_url:
             return
+
         self.driver.get(login_path + return_url)
 
     def __handle_alert(self):
@@ -72,7 +82,11 @@ class IncheonCCScraper:
             result = self.driver.switch_to.alert
             result.accept()
 
-
-# 시간을 만드는 과정부터
-# driver web
-# 또는 임의로 만들기
+    def __close_popup(self):
+        # 현재 윈도우가 2개 이상일 때 반복
+        while len(self.driver.window_handles) > 1:
+            # 마지막(가장 최근) 윈도우로 전환
+            self.driver.switch_to.window(self.driver.window_handles[-1])
+            self.driver.close()  # 현재 윈도우 닫기
+            # 메인 윈도우로 다시 전환
+            self.driver.switch_to.window(self.driver.window_handles[0])
