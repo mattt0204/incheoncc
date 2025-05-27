@@ -27,10 +27,12 @@ class TimeRange:
     end: TimePoint
     priority_time: TimePoint
 
-    def filter_times_in_range(self, timepoints: List[TimePoint]) -> List[TimePoint]:
+    def make_filtered_timepoints_in_range(
+        self, timepoints: List[TimePoint]
+    ) -> List[TimePoint]:
         return []
 
-    def make_all_timepoints_in_range(self) -> List[TimePoint]:
+    def __make_all_timepoints_in_range(self) -> List[TimePoint]:
         result = []
         start_minutes = self.start.hour * 60 + self.start.minute
         end_minutes = self.end.hour * 60 + self.end.minute
@@ -40,14 +42,14 @@ class TimeRange:
             result.append(TimePoint(hour, minute))
         return result
 
-    def make_sorted_timepoints_by_priority(self) -> List[TimePoint]:
+    def make_sorted_all_timepoints_by_priority(self) -> List[TimePoint]:
         def diff(tp: TimePoint):
             return abs(
                 (tp.hour * 60 + tp.minute)
                 - (self.priority_time.hour * 60 + self.priority_time.minute)
             )
 
-        return sorted(self.make_all_timepoints_in_range(), key=diff)
+        return sorted(self.__make_all_timepoints_in_range(), key=diff)
 
 
 class PickDateModel(QAbstractListModel):
