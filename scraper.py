@@ -8,15 +8,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 from pick_datetime_model import TimeRange
-from reservation import Reservation, ReservationStrategy, SessionPostReservation
+from reservation import Reservation, SessionPostReservation
 from user_agent import get_random_user_agent
 
 
 class IncheonCCScraper:
 
-    def __init__(self, reservation_strategy: ReservationStrategy):
+    def __init__(self):
         self.driver = self.__create_driver()
-        self.reservation = Reservation(reservation_strategy)
 
     def __create_driver(self):
         chrome_options = webdriver.ChromeOptions()
@@ -40,8 +39,9 @@ class IncheonCCScraper:
     ):
         self.__go_to_login_page()
         self.__login()
-        self.reservation.set_strategy(SessionPostReservation(self.driver))
-        self.reservation.make_reservation(yyyy_mm_dd, time_range_model)
+        strategy = SessionPostReservation(self.driver)
+        reservation = Reservation(strategy)
+        reservation.make_reservation(yyyy_mm_dd, time_range_model)
 
     def __login(self):
         # 환경변수에서 로그인 정보 읽기
