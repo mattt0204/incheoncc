@@ -119,6 +119,10 @@ class PickDatetimeView(QWidget):
             selected_priority_hour, selected_priority_minute
         )
         self.view_model.reserve_course()
+        # 지금 실행 / cron job 실행
+        # DOMAPI 방식 / Session Post 방식
+        # TODO: 지금은 Session post / 지금 실행 방식으로 먼저 개발
+
         # TODO: 예약 확인 페이지에서 예약이 완료되었는지 확인하고 완료되었다면 예약 완료 문구 발생
 
     def on_cancel_clicked(self):
