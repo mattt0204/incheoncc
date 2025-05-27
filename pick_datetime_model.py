@@ -6,7 +6,7 @@ from PySide6.QtCore import QAbstractListModel, Qt
 
 
 @dataclass
-class TimeTippingPoint:
+class TimePoint:
     hour: int
     minute: int
 
@@ -16,12 +16,15 @@ class TimeTippingPoint:
         if not (0 <= self.minute <= 59):
             raise ValueError("minute는 0~59 사이여야 합니다.")
 
+    def strf_hhmm(self):
+        return f"{self.hour:02d}{self.minute:02d}"
+
 
 @dataclass
-class PickTimeRange:
-    start: TimeTippingPoint
-    end: TimeTippingPoint
-    priority_time: TimeTippingPoint
+class TimeRange:
+    start: TimePoint
+    end: TimePoint
+    priority_time: TimePoint
 
 
 class PickDateModel(QAbstractListModel):

@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from pick_datetime_model import PickTimeRange
+from pick_datetime_model import TimeRange
 
 
 # 전략 인터페이스
@@ -17,13 +17,13 @@ class ReservationStrategy(ABC):
         self.driver = driver
 
     @abstractmethod
-    def reserve(self, time):
+    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         pass
 
 
 # 1. DoM API 방식 (셀레니움 등)
 class DomApiReservation(ReservationStrategy):
-    def reserve(self, time):
+    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         driver = webdriver.Chrome()
         driver.get("https://example.com/reserve")
         # 로그인, 폼 입력, 버튼 클릭 등 실제 브라우저 조작
@@ -51,7 +51,7 @@ class DomApiReservation(ReservationStrategy):
                 cal_live_date.click()
                 break
 
-    def __make_courses_applied_priority(self, time_range_model: PickTimeRange):
+    def __make_courses_applied_priority(self, time_range_model: TimeRange):
         """
         1. start_end 사이에 있는 모든 코스 course_times_scrpaed 수집한다.
         2. priority_time에 가까운 코스 순으로 배열을 sort 합니다.
@@ -102,7 +102,7 @@ class DomApiReservation(ReservationStrategy):
 
         self.courses_of_priority = sorted_course_times
 
-    def __reserve_course(self, yyyy_mm_dd: str, time_range_model: PickTimeRange):
+    def __reserve_course(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         """yyyy_mm_dd 형식의 날짜와 time_range_model을 이용하여 예약을 진행합니다.
         selected_time: 05:06
         3. 우선순위 배열 순서대로 신청합니다. 에러 발생시 코스 선택 페이지로 이동해서, 다시 실행합니다.
@@ -148,12 +148,22 @@ class DomApiReservation(ReservationStrategy):
 
 # 2. Session Post 방식 (requests 등)
 class SessionPostReservation(ReservationStrategy):
-    def reserve(self, time):
+    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+
+        seesion = self.__preload_session()
+
+        # print(f"{}에 Session Post로 예약 시도, 결과: {response.status_code}")
+
+    def __preload_session(self):
+        # Selenium에서 로그인 등 필요한 쿠키 가져오기
+        selenium_cookies = self.driver.get_cookies()
+
+        # requests 세션 초기화
         session = requests.Session()
-        # 로그인 등 필요한 쿠키/헤더 세팅
-        payload = {"time": time}
-        response = session.post("https://example.com/api/reserve", data=payload)
-        print(f"{time}에 Session Post로 예약 시도, 결과: {response.status_code}")
+
+        # Selenium에서 가져온 세션 쿠키를 requests 세션에 추가
+        for cookie in selenium_cookies:
+            session.cookies.set(cookie["name"], cookie["value"])
 
 
 # Context
@@ -164,8 +174,8 @@ class Reservation:
     def set_strategy(self, strategy: ReservationStrategy):
         self.strategy = strategy
 
-    def make_reservation(self, time):
-        self.strategy.reserve(time)
+    def make_reservation(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+        self.strategy.reserve(yyyy_mm_dd, time_range_model)
 
 
 # # 사용 예시

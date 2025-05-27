@@ -7,14 +7,16 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-from pick_datetime_model import PickTimeRange
+from pick_datetime_model import TimeRange
+from reservation import Reservation, ReservationStrategy, SessionPostReservation
 from user_agent import get_random_user_agent
 
 
 class IncheonCCScraper:
 
-    def __init__(self):
+    def __init__(self, reservation_strategy: ReservationStrategy):
         self.driver = self.__create_driver()
+        self.reservation = Reservation(reservation_strategy)
 
     def __create_driver(self):
         chrome_options = webdriver.ChromeOptions()
@@ -34,11 +36,12 @@ class IncheonCCScraper:
     def reserve_course(
         self,
         yyyy_mm_dd: str,
-        time_range_model: PickTimeRange,
+        time_range_model: TimeRange,
     ):
         self.__go_to_login_page()
         self.__login()
-        # TODO: 9시에 cron job and retry 추가 필요
+        self.reservation.set_strategy(SessionPostReservation(self.driver))
+        self.reservation.make_reservation(yyyy_mm_dd, time_range_model)
 
     def __login(self):
         # 환경변수에서 로그인 정보 읽기
