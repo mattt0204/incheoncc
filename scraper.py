@@ -48,6 +48,7 @@ class IncheonCCScraper:
 
         # 작동하지 않음
         self.__close_popup()
+
         strategy = SessionPostReservation(self.driver)
         reservation = Reservation(strategy)
         reservation.make_reservation(yyyy_mm_dd, time_range_model)
@@ -57,14 +58,18 @@ class IncheonCCScraper:
 
         login_id = os.environ.get("LOGIN_ID")
         login_pw = os.environ.get("LOGIN_PW")
+
         if not login_id or not login_pw:
             raise RuntimeError("환경변수 LOGIN_ID, LOGIN_PW가 필요합니다.")
 
-        id_element = self.driver.find_element(value="login_id")
-        pw_element = self.driver.find_element(value="login_pw")
+        # id 엘리먼트 선택
+        id_element = self.driver.find_element(By.ID, "login_id")
+        pw_element = self.driver.find_element(By.ID, "login_pw")
+
         id_element.send_keys(login_id)
         pw_element.send_keys(login_pw)
-        login_button = self.driver.find_element(value="bt_login", by=By.CLASS_NAME)
+
+        login_button = self.driver.find_element(By.CLASS_NAME, "bt_login")
         login_button.click()
 
         if EC.alert_is_present():
