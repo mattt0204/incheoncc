@@ -10,12 +10,14 @@ from pick_datetime_model import (
     TimeRange,
 )
 from reservation import Reservation
+from scraper import IncheonCCScraper
 
 
 class PickDatetimeViewModel(QObject):
     # 추후 선택한 Input 값에 대한 Signal 사용으로 view에 업데이트
 
-    def __init__(self):
+    def __init__(self, scraper: IncheonCCScraper):
+        self.scraper = scraper
         self.dates_model = PickDateModel()
         self.start: TimePoint = TimePoint(hour=7, minute=30)
         self.priority_time: TimePoint = TimePoint(hour=8, minute=00)
@@ -47,6 +49,7 @@ class PickDatetimeViewModel(QObject):
     ):
         """Reservation 클래스 만들고 난 후 실행"""
         reservation = Reservation(
+            scraper=self.scraper,
             strategy=strategy,
             scheduler=scheduler,
             yyyy_mm_dd=self.selected_date,

@@ -15,6 +15,7 @@ from pick_datetime_model import (
     TimePoint,
     TimeRange,
 )
+from scraper import IncheonCCScraper
 
 
 # 전략 인터페이스
@@ -231,18 +232,22 @@ class Reservation:
 
     def __init__(
         self,
+        scraper: IncheonCCScraper,
         strategy: ReservationStrategy,
         scheduler: ReservationScheduler,
         yyyy_mm_dd: str,
         time_range_model: TimeRange,
     ):
+        self.scraper = scraper
         self.strategy = strategy
         self.scheduler = scheduler
         self.yyyy_mm_dd = yyyy_mm_dd
         self.time_range_model = time_range_model
 
     def make_reservation(self):
-        # 9시 이전에 준비
-        # 실제 예약 실행
+        # 9시 이전에 준비할 내용 로그인 말고 없어?
+        # 로그인과 이런 것들은 미리 준비하는게 맞지 않을까?
+
+        # 실제 예약 실행(예약방식,how에 따라 달라짐)
         # 예약 완료 확인
         pass

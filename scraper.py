@@ -9,8 +9,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 from custom_logger import logger
-from pick_datetime_model import TimeRange
-from reservation import Reservation, SessionPostReservation
 from user_agent import get_random_user_agent
 
 
@@ -34,24 +32,15 @@ class IncheonCCScraper:
         driver = webdriver.Chrome(service=service, options=chrome_options)
         return driver
 
-    def reserve_course(
-        self,
-        yyyy_mm_dd: str,
-        time_range_model: TimeRange,
-    ):
+    def login(self):
 
         try:
             self.__go_to_login_page()
             self.__login()
         except UnexpectedAlertPresentException as e:
-            logger.info("이미 로그인 경우, alert 에러 뜨지만, 무시해도 관계 없음")
-
-        # 작동하지 않음
-        self.__close_popup()
-
-        strategy = SessionPostReservation(self.driver)
-        reservation = Reservation(strategy)
-        reservation.make_reservation(yyyy_mm_dd, time_range_model)
+            logger.info(
+                "이미 로그인 경우, 예상치 못한 alert 에러 뜸, But 무시하면 문제 없음"
+            )
 
     def __login(self):
         # 환경변수에서 로그인 정보 읽기
@@ -88,7 +77,7 @@ class IncheonCCScraper:
             result = self.driver.switch_to.alert
             result.accept()
 
-    def __close_popup(self):
+    def __close_popup_until_one(self):
         # 현재 윈도우가 2개 이상일 때 반복
         while len(self.driver.window_handles) > 1:
             # 마지막(가장 최근) 윈도우로 전환
