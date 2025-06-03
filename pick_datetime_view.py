@@ -67,10 +67,22 @@ class PickDatetimeView(QWidget):
 
     def init_button_section(self):
         self.cancel_button = QPushButton("취소")
-        self.ok_button = QPushButton("다음")
-        self.button_layout = QHBoxLayout()
-        self.button_layout.addWidget(self.cancel_button)
-        self.button_layout.addWidget(self.ok_button)
+        self.cancel_layout = QHBoxLayout()
+        self.cancel_layout.addStretch()
+        self.cancel_layout.addWidget(self.cancel_button)
+        self.cancel_layout.addStretch()
+
+        self.execute_session_now = QPushButton("직접 요청/ 지금 실행")
+        self.execute_session_cron = QPushButton("직접 요청/ 화/목 9시 실행")
+        self.execute_dom_now = QPushButton("DOM 요청/ 화/목 9시 실행")
+        self.execute_dom_cron = QPushButton("DOM 요청/ 화/목 9시 실행")
+
+        # 2행: 나머지 버튼
+        self.action_layout = QHBoxLayout()
+        self.action_layout.addWidget(self.execute_session_now)
+        self.action_layout.addWidget(self.execute_session_cron)
+        self.action_layout.addWidget(self.execute_dom_now)
+        self.action_layout.addWidget(self.execute_dom_cron)
 
     def init_layout(self):
         self.main_layout = QVBoxLayout()
@@ -89,15 +101,19 @@ class PickDatetimeView(QWidget):
         self.main_layout.addWidget(self.end_minute_label)
         self.main_layout.addWidget(self.end_minute_combo)
 
-        self.main_layout.addLayout(self.button_layout)
+        self.main_layout.addLayout(self.action_layout)
+        self.main_layout.addSpacing(10)  # 버튼 사이 여백
+        self.main_layout.addLayout(self.cancel_layout)
 
         self.setLayout(self.main_layout)
 
     def connect_signals(self):
-        self.ok_button.clicked.connect(self.on_ok_clicked)
-        self.cancel_button.clicked.connect(self.on_cancel_clicked)
+        self.execute_session_now.clicked.connect(self.on_session_now)
 
-    def on_ok_clicked(self):
+        self.cancel_button.clicked.connect(self.on_cancel_clicked)
+        # TODO: 직접 실행 cron / DOM 실행 cron / DOM 실행 now
+
+    def on_session_now(self):
         """선택한 날짜와 TimeRange를 전달하여 예약"""
         selected_indexes = self.list_view.selectedIndexes()
         if not selected_indexes:
