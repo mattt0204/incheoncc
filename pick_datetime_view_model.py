@@ -59,7 +59,7 @@ class PickDatetimeViewModel(QObject):
                 priority_time=self.priority_time,
             ),
         )
-        reservation.make_reservation()
+        reservation.execute()
 
 
 class DateWithWeekdayDelegate(QStyledItemDelegate):

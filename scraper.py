@@ -1,6 +1,7 @@
 # InCheonCCScraper
 import os
 
+import arrow
 from selenium import webdriver
 from selenium.common import UnexpectedAlertPresentException
 from selenium.webdriver.chrome.service import Service
@@ -13,6 +14,9 @@ from user_agent import get_random_user_agent
 
 
 class IncheonCCScraper:
+    """
+    Scraper (로그인, 페이지 제어)
+    """
 
     def __init__(self):
         self.driver = self.__create_driver()
@@ -85,3 +89,29 @@ class IncheonCCScraper:
             self.driver.close()  # 현재 윈도우 닫기
             # 메인 윈도우로 다시 전환
             self.driver.switch_to.window(self.driver.window_handles[0])
+
+    def __go_to_reservation_page(self):
+        reservation_path = (
+            "https://www.incheoncc.com:1436/GolfRes/onepage/real_reservation.asp"
+        )
+        if reservation_path in self.driver.current_url:
+            return
+
+        today_local = arrow.now().to("Asia/Seoul")
+        today_yyyymmdd = today_local.date().strftime("%Y%m%d")
+        prev_date_yyyymm = today_local.shift(months=-1).strftime("%Y%m")
+        now_date_yyyymm = today_local.strftime("%Y%m")
+        next_date_yyyymm = today_local.shift(months=1).strftime("%Y%m")
+
+        reservation_url = f"""{reservation_path}#
+        pointdate={today_yyyymmdd}
+        &courseid=0
+        &openyn=1
+        &dategbn=6
+        &choice_time=00
+        &settype=T
+        &prevDate={prev_date_yyyymm}
+        &nowDate={now_date_yyyymm}
+        &nextDate={next_date_yyyymm}"""
+
+        self.driver.get(reservation_url)
