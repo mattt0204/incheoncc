@@ -28,6 +28,10 @@ class ReserveMethod(ABC):
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         pass
 
+    # TODO: 예약 완료 확인까지 확인 완료
+    def is_course_reserved(self):
+        pass
+
 
 # 1. DoM API 방식 (셀레니움 등)
 class DomApiReservation(ReserveMethod):
@@ -245,9 +249,21 @@ class Reservation:
         self.time_range_model = time_range_model
 
     def execute(self):
-        # 9시 이전에 준비할 내용 로그인 말고 없어?
-        # 로그인과 이런 것들은 미리 준비하는게 맞지 않을까?
-
         # 실제 예약 실행(예약방식,how에 따라 달라짐)
-        # 예약 완료 확인
-        pass
+        if self.strategy == ReservationStrategy.SESSION:
+            reservation_method = SessionPostReservation(self.scraper.driver)
+        elif self.strategy == ReservationStrategy.DOM:
+            reservation_method = DomApiReservation(self.scraper.driver)
+        else:
+            raise ValueError("지원하지 않는 예약 방식(how)입니다.")
+
+        if self.scheduler == ReservationScheduler.CRON:
+            # 예약된 시간까지 대기 후 실행 (예: scheduler 사용)
+            # self.scheduler.wait_until_reserved_time()
+            reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
+
+        elif self.scheduler == ReservationScheduler.NOW:
+            # 즉시 실행
+            reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
+        else:
+            raise ValueError("지원하지 않는 실행 시점(when)입니다.")
