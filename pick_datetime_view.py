@@ -111,13 +111,14 @@ class PickDatetimeView(QWidget):
         selected_end_minute = self.end_minute_combo.currentIndex()
         selected_priority_hour = self.priority_hour_combo.currentIndex()
         selected_priority_minute = self.priority_minute_combo.currentIndex()
-        # TODO: start와 end 사이에 priority_time이 있는지 확인 하고 없다면 에러 문구 발생
+
         self.view_model.set_selected_date(selected_yyyy_mm_dd)
         self.view_model.set_start_time(selected_start_hour, selected_start_minute)
         self.view_model.set_end_time(selected_end_hour, selected_end_minute)
         self.view_model.set_priority_time(
             selected_priority_hour, selected_priority_minute
         )
+
         self.view_model.reserve_course()
         # 지금 실행 / cron job 실행
         # DOMAPI 방식 / Session Post 방식

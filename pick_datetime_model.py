@@ -51,6 +51,14 @@ class TimeRange:
 
         return sorted(self.__make_all_timepoints_in_range(), key=diff)
 
+    def __post_init__(self):
+        start_minutes = self.start.hour * 60 + self.start.minute
+        end_minutes = self.end.hour * 60 + self.end.minute
+        priority_minutes = self.priority_time.hour * 60 + self.priority_time.minute
+
+        if not (start_minutes <= priority_minutes <= end_minutes):
+            raise ValueError("priority_time은 start와 end 사이에 있어야 합니다.")
+
 
 class PickDateModel(QAbstractListModel):
     def __init__(self, dates=[]):
