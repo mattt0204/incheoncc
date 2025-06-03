@@ -244,7 +244,7 @@ class Reservation:
         self.yyyy_mm_dd = yyyy_mm_dd
         self.time_range_model = time_range_model
 
-    def make_reservation(self):
+    def execute(self):
         # 9시 이전에 준비할 내용 로그인 말고 없어?
         # 로그인과 이런 것들은 미리 준비하는게 맞지 않을까?
 
