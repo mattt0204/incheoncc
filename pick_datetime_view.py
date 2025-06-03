@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from pick_datetime_model import ReservationScheduler, ReservationStrategy
 from pick_datetime_view_model import DateWithWeekdayDelegate, PickDatetimeViewModel
 
 
@@ -113,7 +114,7 @@ class PickDatetimeView(QWidget):
         self.cancel_button.clicked.connect(self.on_cancel_clicked)
         # TODO: 직접 실행 cron / DOM 실행 cron / DOM 실행 now
 
-    def on_session_now(self):
+    def __set_selected_info(self):
         """선택한 날짜와 TimeRange를 전달하여 예약"""
         selected_indexes = self.list_view.selectedIndexes()
         if not selected_indexes:
@@ -135,12 +136,36 @@ class PickDatetimeView(QWidget):
             selected_priority_hour, selected_priority_minute
         )
 
-        self.view_model.reserve_course()
+    def on_session_now(self):
+        self.__set_selected_info()
+        self.view_model.reserve_course(
+            ReservationStrategy.SESSION, ReservationScheduler.NOW
+        )
         # 지금 실행 / cron job 실행
         # DOMAPI 방식 / Session Post 방식
         # TODO: 지금은 Session post / 지금 실행 방식으로 먼저 개발
 
         # TODO: 예약 확인 페이지에서 예약이 완료되었는지 확인하고 완료되었다면 예약 완료 문구 발생
+
+        pass
+
+    def on_session_cron(self):
+        self.view_model.reserve_course(
+            ReservationStrategy.SESSION, ReservationScheduler.CRON
+        )
+        pass
+
+    def on_dom_now(self):
+        self.__set_selected_info()
+        self.view_model.reserve_course(
+            ReservationStrategy.DOM, ReservationScheduler.NOW
+        )
+
+    def on_dom_cron(self):
+        self.__set_selected_info()
+        self.view_model.reserve_course(
+            ReservationStrategy.DOM, ReservationScheduler.CRON
+        )
 
     def on_cancel_clicked(self):
         self.app.quit()

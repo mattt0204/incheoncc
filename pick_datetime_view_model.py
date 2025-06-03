@@ -2,19 +2,24 @@ import arrow
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QStyledItemDelegate
 
-from pick_datetime_model import PickDateModel, TimePoint, TimeRange
+from pick_datetime_model import (
+    PickDateModel,
+    ReservationScheduler,
+    ReservationStrategy,
+    TimePoint,
+    TimeRange,
+)
+from reservation import Reservation
 
 
 class PickDatetimeViewModel(QObject):
     # 추후 선택한 Input 값에 대한 Signal 사용으로 view에 업데이트
 
-    def __init__(self, scraper):
-        self.scraper = scraper
+    def __init__(self):
         self.dates_model = PickDateModel()
         self.start: TimePoint = TimePoint(hour=7, minute=30)
         self.priority_time: TimePoint = TimePoint(hour=8, minute=00)
         self.end: TimePoint = TimePoint(hour=8, minute=30)
-
         self.selected_date = ""
         self.load_dates()
 
@@ -37,8 +42,13 @@ class PickDatetimeViewModel(QObject):
         priority_time = TimePoint(hour=hour, minute=minute)
         self.priority_time = priority_time
 
-    def reserve_course(self):
-        self.scraper.reserve_course(
+    def reserve_course(
+        self, strategy: ReservationStrategy, scheduler: ReservationScheduler
+    ):
+        """Reservation 클래스 만들고 난 후 실행"""
+        reservation = Reservation(
+            strategy=strategy,
+            scheduler=scheduler,
             yyyy_mm_dd=self.selected_date,
             time_range_model=TimeRange(
                 start=self.start,
@@ -46,6 +56,7 @@ class PickDatetimeViewModel(QObject):
                 priority_time=self.priority_time,
             ),
         )
+        reservation.make_reservation()
 
 
 class DateWithWeekdayDelegate(QStyledItemDelegate):

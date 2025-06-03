@@ -9,11 +9,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from custom_logger import logger
-from pick_datetime_model import TimePoint, TimeRange
+from pick_datetime_model import (
+    ReservationScheduler,
+    ReservationStrategy,
+    TimePoint,
+    TimeRange,
+)
 
 
 # 전략 인터페이스
-class ReservationStrategy(ABC):
+class ReserveMethod(ABC):
 
     def __init__(self, driver: webdriver.Chrome):
         self.driver = driver
@@ -24,7 +29,7 @@ class ReservationStrategy(ABC):
 
 
 # 1. DoM API 방식 (셀레니움 등)
-class DomApiReservation(ReservationStrategy):
+class DomApiReservation(ReserveMethod):
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         # self.driver
         pass
@@ -145,7 +150,7 @@ class DomApiReservation(ReservationStrategy):
 
 
 # 2. Session Post 방식 (requests 등)
-class SessionPostReservation(ReservationStrategy):
+class SessionPostReservation(ReserveMethod):
     """Session Post 방식으로 예약을 진행합니다."""
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
@@ -217,13 +222,27 @@ class SessionPostReservation(ReservationStrategy):
 
 # Context
 class Reservation:
-    """예약 총괄 책임 담당"""
+    """예약 총괄 책임 담당
+    View에서 받은 파라미터 관리
+    예약 플로우 전체 오케스트레이션
+    타이밍 제어 (9시 정확히, 사전 로그인 체크)
+    Strategy와 Scraper 간 데이터 전달
+    """
 
-    def __init__(self, strategy: ReservationStrategy):
+    def __init__(
+        self,
+        strategy: ReservationStrategy,
+        scheduler: ReservationScheduler,
+        yyyy_mm_dd: str,
+        time_range_model: TimeRange,
+    ):
         self.strategy = strategy
+        self.scheduler = scheduler
+        self.yyyy_mm_dd = yyyy_mm_dd
+        self.time_range_model = time_range_model
 
-    def set_strategy(self, strategy: ReservationStrategy):
-        self.strategy = strategy
-
-    def make_reservation(self, yyyy_mm_dd: str, time_range_model: TimeRange):
-        self.strategy.reserve(yyyy_mm_dd, time_range_model)
+    def make_reservation(self):
+        # 9시 이전에 준비
+        # 실제 예약 실행
+        # 예약 완료 확인
+        pass

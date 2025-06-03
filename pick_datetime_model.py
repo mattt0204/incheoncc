@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from enum import Enum
 from typing import List
 
 import arrow
@@ -185,3 +186,13 @@ class PickDateModel(QAbstractListModel):
         ]
 
         return available_dates
+
+
+class ReservationStrategy(Enum):
+    SESSION = "SESSION"  # 직접 요청
+    DOM = "DOM"  # DOM API 요청
+
+
+class ReservationScheduler(Enum):
+    NOW = "NOW"  # 지금 실행
+    CRON = "CRON"  # 화/목 9시 실행
