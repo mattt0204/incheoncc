@@ -36,6 +36,7 @@ class ReserveMethod(ABC):
 # 1. DoM API 방식 (셀레니움 등)
 class DomApiReservation(ReserveMethod):
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+        logger.info("돔 API를 이용하여 예약하기")
         # self.driver
         pass
 
@@ -162,24 +163,25 @@ class SessionPostReservation(ReserveMethod):
         tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
         session = self.__preload_session()
         reserve_ok_url = "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
-        for idx, time_point in enumerate(tps_priority, start=1):
-            payload = self.__make_payload(yyyy_mm_dd, time_point)
-            response = session.post(reserve_ok_url, data=payload)
-            if "OK" in response.text:
-                logger.info(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
-                break
-            elif "오류" in response.text:
-                logger.info(
-                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간"
-                )
-            elif "동시예약" in response.text:
-                logger.info(
-                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 동시예약으로 인한 실패"
-                )
-            elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text:
-                logger.info(
-                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
-                )
+        logger.info("세션 직접 요청으로 예약하기")
+        # for idx, time_point in enumerate(tps_priority, start=1):
+        #     payload = self.__make_payload(yyyy_mm_dd, time_point)
+        #     response = session.post(reserve_ok_url, data=payload)
+        #     if "OK" in response.text:
+        #         logger.info(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
+        #         break
+        #     elif "오류" in response.text:
+        #         logger.info(
+        #             f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간"
+        #         )
+        #     elif "동시예약" in response.text:
+        #         logger.info(
+        #             f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 동시예약으로 인한 실패"
+        #         )
+        #     elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text:
+        #         logger.info(
+        #             f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
+        #         )
 
     def __preload_session(self) -> requests.Session:
         # Selenium에서 로그인 등 필요한 쿠키 가져오기

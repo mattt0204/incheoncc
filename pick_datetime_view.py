@@ -73,10 +73,10 @@ class PickDatetimeView(QWidget):
         self.cancel_layout.addWidget(self.cancel_button)
         self.cancel_layout.addStretch()
 
-        self.execute_session_now = QPushButton("직접 요청/ 지금 실행")
-        self.execute_session_cron = QPushButton("직접 요청/ 화/목 9시 실행")
-        self.execute_dom_now = QPushButton("DOM 요청/ 화/목 9시 실행")
-        self.execute_dom_cron = QPushButton("DOM 요청/ 화/목 9시 실행")
+        self.execute_session_now = QPushButton("직접 요청/지금 실행")
+        self.execute_session_cron = QPushButton("직접 요청/화,목 9시 실행")
+        self.execute_dom_now = QPushButton("DOM 요청/지금 실행")
+        self.execute_dom_cron = QPushButton("DOM 요청/화,목 9시 실행")
 
         # 2행: 나머지 버튼
         self.action_layout = QHBoxLayout()
@@ -110,7 +110,9 @@ class PickDatetimeView(QWidget):
 
     def connect_signals(self):
         self.execute_session_now.clicked.connect(self.on_session_now)
-
+        self.execute_session_cron.clicked.connect(self.on_session_cron)
+        self.execute_dom_now.clicked.connect(self.on_dom_now)
+        self.execute_dom_cron.clicked.connect(self.on_dom_cron)
         self.cancel_button.clicked.connect(self.on_cancel_clicked)
         # TODO: 직접 실행 cron / DOM 실행 cron / DOM 실행 now
 
