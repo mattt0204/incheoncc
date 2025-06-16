@@ -29,8 +29,26 @@ class ReserveMethod(ABC):
         pass
 
     # TODO: 예약 완료 확인까지 확인 완료
-    def is_course_reserved(self):
-        pass
+    def is_course_reserved(self, yyyy_mm_dd: str, point_time: str):
+        """예약확인페이지에서 예약이 완료되었는지 확인합니다. point_time: 05:06"""
+        match = re.match(r"(\d{4})(\d{2})(\d{2})", yyyy_mm_dd)
+        reservation_date_for_check = ""
+        if match:
+            year, month, day = match.groups()
+            reservation_date_for_check = f"{year}년 {int(month):02d}월 {int(day):02d}일"
+        else:
+            raise RuntimeError("날짜 형식이 맞지 않습니다.")
+        table = self.driver.find_element(By.CLASS_NAME, "cm_time_list_tbl")
+
+        for reservation in table.find_elements(By.TAG_NAME, "tr")[1:]:
+            if (
+                reservation.find_elements(By.TAG_NAME, "td")[1].text
+                == reservation_date_for_check
+                and reservation.find_elements(By.TAG_NAME, "td")[2].text == point_time
+            ):
+                return True
+
+        return False
 
 
 # 1. DoM API 방식 (셀레니움 등)
@@ -132,27 +150,6 @@ class DomApiReservation(ReserveMethod):
 
         예약 후 예약 확인 페이지로 이동합니다."""
         pass
-
-    def __check_reservation_complete(self, yyyy_mm_dd: str, point_time: str):
-        """예약확인페이지에서 예약이 완료되었는지 확인합니다. point_time: 05:06"""
-        match = re.match(r"(\d{4})(\d{2})(\d{2})", yyyy_mm_dd)
-        reservation_date_for_check = ""
-        if match:
-            year, month, day = match.groups()
-            reservation_date_for_check = f"{year}년 {int(month):02d}월 {int(day):02d}일"
-        else:
-            raise RuntimeError("날짜 형식이 맞지 않습니다.")
-        table = self.driver.find_element(By.CLASS_NAME, "cm_time_list_tbl")
-
-        for reservation in table.find_elements(By.TAG_NAME, "tr")[1:]:
-            if (
-                reservation.find_elements(By.TAG_NAME, "td")[1].text
-                == reservation_date_for_check
-                and reservation.find_elements(By.TAG_NAME, "td")[2].text == point_time
-            ):
-                return True
-
-        return False
 
 
 # 2. Session Post 방식 (requests 등)
