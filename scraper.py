@@ -1,9 +1,9 @@
 # InCheonCCScraper
 import os
+import time
 
 import arrow
 from selenium import webdriver
-from selenium.common import UnexpectedAlertPresentException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -38,16 +38,27 @@ class IncheonCCScraper:
 
     def login(self):
 
-        try:
-            self.__go_to_login_page()
-            self.__login()
-        except UnexpectedAlertPresentException as e:
-            logger.info(
-                "이미 로그인 경우, 예상치 못한 alert 에러 뜸, But 무시하면 문제 없음"
-            )
+        self.__go_to_home_page()
+        self.__login()
+        self.__go_to_reservation_page()
+
+    def __go_to_home_page(self):
+        home_path = "https://www.incheoncc.com:1436/index.asp"
+        if home_path in self.driver.current_url:
+            return
+        self.driver.get(home_path)
+        self.__close_popup_until_one()
 
     def __login(self):
         # 환경변수에서 로그인 정보 읽기
+
+        loginpage_button = self.driver.find_element(
+            By.XPATH, "//div[@class='login_area']/a[1]"
+        )
+        if loginpage_button.text != "로그인":
+            return
+
+        loginpage_button.click()
 
         login_id = os.environ.get("LOGIN_ID")
         login_pw = os.environ.get("LOGIN_PW")
@@ -67,14 +78,8 @@ class IncheonCCScraper:
 
         if EC.alert_is_present():
             self.__handle_alert()
-
-    def __go_to_login_page(self):
-        login_path = "https://www.incheoncc.com:1436/login/login.asp"
-        return_url = "?returnurl=/pagesite/reservation/live.asp?"
-        if login_path in self.driver.current_url:
-            return
-
-        self.driver.get(login_path + return_url)
+        time.sleep(1)
+        self.__close_popup_until_one()
 
     def __handle_alert(self):
         if EC.alert_is_present():
@@ -85,10 +90,11 @@ class IncheonCCScraper:
         # 현재 윈도우가 2개 이상일 때 반복
         while len(self.driver.window_handles) > 1:
             # 마지막(가장 최근) 윈도우로 전환
+            logger.info(f"현재 윈도우 개수: {len(self.driver.window_handles)}")
             self.driver.switch_to.window(self.driver.window_handles[-1])
             self.driver.close()  # 현재 윈도우 닫기
-            # 메인 윈도우로 다시 전환
-            self.driver.switch_to.window(self.driver.window_handles[0])
+        # 메인 윈도우로 다시 전환
+        self.driver.switch_to.window(self.driver.window_handles[0])
 
     def __go_to_reservation_page(self):
         reservation_path = (
