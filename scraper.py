@@ -9,7 +9,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-from custom_logger import logger
 from user_agent import get_random_user_agent
 
 
@@ -89,10 +88,8 @@ class IncheonCCScraper:
     def __close_popup_until_one(self):
         # 현재 윈도우가 2개 이상일 때 반복
         while len(self.driver.window_handles) > 1:
-            # 마지막(가장 최근) 윈도우로 전환
-            logger.info(f"현재 윈도우 개수: {len(self.driver.window_handles)}")
             self.driver.switch_to.window(self.driver.window_handles[-1])
-            self.driver.close()  # 현재 윈도우 닫기
+            self.driver.close()
         # 메인 윈도우로 다시 전환
         self.driver.switch_to.window(self.driver.window_handles[0])
 
