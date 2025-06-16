@@ -164,6 +164,7 @@ class SessionPostReservation(ReserveMethod):
         session = self.__preload_session()
         reserve_ok_url = "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
         logger.info("세션 직접 요청으로 예약하기")
+        is_success = False
         for idx, time_point in enumerate(tps_priority, start=1):
             for point_id_out_in in ["1", "2"]:
                 payload = self.__make_payload(yyyy_mm_dd, time_point, point_id_out_in)
@@ -175,6 +176,7 @@ class SessionPostReservation(ReserveMethod):
                     logger.info(
                         f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 성공"
                     )
+                    is_success = True
                     break
                 elif "오류" in response.text:
                     logger.info(
@@ -190,6 +192,8 @@ class SessionPostReservation(ReserveMethod):
                     logger.info(
                         f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
                     )
+            if is_success:
+                break
 
     def __preload_session(self) -> requests.Session:
         # Selenium에서 로그인 등 필요한 쿠키 가져오기
