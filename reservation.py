@@ -31,6 +31,10 @@ class ReserveMethod(ABC):
     # TODO: 예약 완료 확인까지 확인 완료
     def is_course_reserved(self, yyyy_mm_dd: str, point_time: str):
         """예약확인페이지에서 예약이 완료되었는지 확인합니다. point_time: 05:06"""
+        my_golfreslist_url = (
+            "https://www.incheoncc.com:1436/GolfRes/onepage/my_golfreslist.asp"
+        )
+        self.driver.get(my_golfreslist_url)
         match = re.match(r"(\d{4})(\d{2})(\d{2})", yyyy_mm_dd)
         reservation_date_for_check = ""
         if match:
