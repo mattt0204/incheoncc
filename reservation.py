@@ -164,24 +164,25 @@ class SessionPostReservation(ReserveMethod):
         session = self.__preload_session()
         reserve_ok_url = "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
         logger.info("세션 직접 요청으로 예약하기")
-        # for idx, time_point in enumerate(tps_priority, start=1):
-        #     payload = self.__make_payload(yyyy_mm_dd, time_point)
-        #     response = session.post(reserve_ok_url, data=payload)
-        #     if "OK" in response.text:
-        #         logger.info(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
-        #         break
-        #     elif "오류" in response.text:
-        #         logger.info(
-        #             f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간"
-        #         )
-        #     elif "동시예약" in response.text:
-        #         logger.info(
-        #             f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 동시예약으로 인한 실패"
-        #         )
-        #     elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text:
-        #         logger.info(
-        #             f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
-        #         )
+        for idx, time_point in enumerate(tps_priority, start=1):
+            # print(time_point, yyyy_mm_dd)
+            payload = self.__make_payload(yyyy_mm_dd, time_point)
+            response = session.post(reserve_ok_url, data=payload)
+            if "OK" in response.text:
+                logger.info(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
+                break
+            elif "오류" in response.text:
+                logger.info(
+                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간"
+                )
+            elif "동시예약" in response.text:
+                logger.info(
+                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 동시예약으로 인한 실패"
+                )
+            elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text:
+                logger.info(
+                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
+                )
 
     def __preload_session(self) -> requests.Session:
         # Selenium에서 로그인 등 필요한 쿠키 가져오기

@@ -19,9 +19,9 @@ class PickDatetimeViewModel(QObject):
     def __init__(self, scraper: IncheonCCScraper):
         self.scraper = scraper
         self.dates_model = PickDateModel()
-        self.start: TimePoint = TimePoint(hour=7, minute=30)
-        self.priority_time: TimePoint = TimePoint(hour=8, minute=00)
-        self.end: TimePoint = TimePoint(hour=8, minute=30)
+        self.start: TimePoint = TimePoint(hour=7, minute=0)
+        self.priority_time: TimePoint = TimePoint(hour=7, minute=30)
+        self.end: TimePoint = TimePoint(hour=8, minute=0)
         self.selected_date = ""
         self.load_dates()
 

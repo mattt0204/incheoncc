@@ -44,7 +44,7 @@ class PickDatetimeView(QWidget):
         self.start_hour_combo.addItems([str(i) for i in range(24)])
         self.start_minute_combo.addItems([str(i) for i in range(60)])
         self.start_hour_combo.setCurrentIndex(7)
-        self.start_minute_combo.setCurrentIndex(30)
+        self.start_minute_combo.setCurrentIndex(0)
 
     def init_end_time_section(self):
         self.end_hour_label = QLabel("마지막 시간")
@@ -54,7 +54,7 @@ class PickDatetimeView(QWidget):
         self.end_hour_combo.addItems([str(i) for i in range(24)])
         self.end_minute_combo.addItems([str(i) for i in range(60)])
         self.end_hour_combo.setCurrentIndex(8)
-        self.end_minute_combo.setCurrentIndex(30)
+        self.end_minute_combo.setCurrentIndex(0)
 
     def init_priority_time_section(self):
         self.priority_hour_label = QLabel("우선순위 시간")
@@ -63,8 +63,8 @@ class PickDatetimeView(QWidget):
         self.priority_minute_combo = QComboBox()
         self.priority_hour_combo.addItems([str(i) for i in range(24)])
         self.priority_minute_combo.addItems([str(i) for i in range(60)])
-        self.priority_hour_combo.setCurrentIndex(8)
-        self.priority_minute_combo.setCurrentIndex(00)
+        self.priority_hour_combo.setCurrentIndex(7)
+        self.priority_minute_combo.setCurrentIndex(30)
 
     def init_button_section(self):
         self.cancel_button = QPushButton("취소")
