@@ -240,32 +240,32 @@ class Reservation:
     def __init__(
         self,
         scraper: IncheonCCScraper,
-        strategy: ReservationStrategy,
-        scheduler: ReservationScheduler,
         yyyy_mm_dd: str,
         time_range_model: TimeRange,
     ):
         self.scraper = scraper
-        self.strategy = strategy
-        self.scheduler = scheduler
         self.yyyy_mm_dd = yyyy_mm_dd
         self.time_range_model = time_range_model
 
-    def execute(self):
+    def execute(
+        self,
+        strategy: ReservationStrategy,
+        scheduler: ReservationScheduler,
+    ):
         # 실제 예약 실행(예약방식,how에 따라 달라짐)
-        if self.strategy == ReservationStrategy.SESSION:
+        if strategy == ReservationStrategy.SESSION:
             reservation_method = SessionPostReservation(self.scraper.driver)
-        elif self.strategy == ReservationStrategy.DOM:
+        elif strategy == ReservationStrategy.DOM:
             reservation_method = DomApiReservation(self.scraper.driver)
         else:
             raise ValueError("지원하지 않는 예약 방식(how)입니다.")
 
-        if self.scheduler == ReservationScheduler.CRON:
+        if scheduler == ReservationScheduler.CRON:
             # 예약된 시간까지 대기 후 실행 (예: scheduler 사용)
             # self.scheduler.wait_until_reserved_time()
-            reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
-
-        elif self.scheduler == ReservationScheduler.NOW:
+            # reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
+            pass
+        elif scheduler == ReservationScheduler.NOW:
             # 즉시 실행
             reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
         else:

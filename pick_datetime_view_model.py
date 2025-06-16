@@ -50,8 +50,6 @@ class PickDatetimeViewModel(QObject):
         """Reservation 클래스 만들고 난 후 실행"""
         reservation = Reservation(
             scraper=self.scraper,
-            strategy=strategy,
-            scheduler=scheduler,
             yyyy_mm_dd=self.selected_date,
             time_range_model=TimeRange(
                 start=self.start,
@@ -59,7 +57,10 @@ class PickDatetimeViewModel(QObject):
                 priority_time=self.priority_time,
             ),
         )
-        reservation.execute()
+        reservation.execute(
+            strategy=strategy,
+            scheduler=scheduler,
+        )
 
 
 class DateWithWeekdayDelegate(QStyledItemDelegate):
