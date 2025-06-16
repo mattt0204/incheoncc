@@ -64,8 +64,7 @@ class DomApiReservation(ReserveMethod):
 
     def __go_to_pointdate_page(self, yyyy_mm_dd):
         """yyyy_mm_dd 형식의 날짜를 클릭하여 페이지를 이동합니다."""
-        # TODO: 9시이후에는 until 코스가 보일 때까지,또는 응답이 올 때 까지, //  how 재시도 또는 새로 고침, 규칙을 설정
-        # TODO: 9시 이전에는 세션 끊길수도있으니, 1분마다 누르기
+        # TODO: 9시 이후에는 until 코스가 보일 때까지,또는 응답이 올 때 까지, //  how 재시도 또는 새로 고침, 규칙을 설정
         wait = WebDriverWait(self.driver, 10)
         cal_live_dates = wait.until(
             EC.presence_of_all_elements_located(
@@ -156,7 +155,7 @@ class DomApiReservation(ReserveMethod):
         pass
 
 
-# 2. Session Post 방식 (requests 등)
+# 2. Session Post 방식
 class SessionPostReservation(ReserveMethod):
     """Session Post 방식으로 예약을 진행합니다."""
 
@@ -166,24 +165,31 @@ class SessionPostReservation(ReserveMethod):
         reserve_ok_url = "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
         logger.info("세션 직접 요청으로 예약하기")
         for idx, time_point in enumerate(tps_priority, start=1):
-            # print(time_point, yyyy_mm_dd)
-            payload = self.__make_payload(yyyy_mm_dd, time_point)
-            response = session.post(reserve_ok_url, data=payload)
-            if "OK" in response.text:
-                logger.info(f"{idx}번째 시도, {payload["pointtime"]} 예약 성공")
-                break
-            elif "오류" in response.text:
+            for point_id_out_in in ["1", "2"]:
+                payload = self.__make_payload(yyyy_mm_dd, time_point, point_id_out_in)
                 logger.info(
-                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 없는 시간"
+                    f"{payload["pointdate"]}/{payload["pointtime"]}/{payload["pointid"]}"
                 )
-            elif "동시예약" in response.text:
-                logger.info(
-                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 동시예약으로 인한 실패"
-                )
-            elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text:
-                logger.info(
-                    f"{idx}번째 시도, {payload["pointtime"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
-                )
+                response = session.post(reserve_ok_url, data=payload)
+                if "OK" in response.text:
+                    logger.info(
+                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 성공"
+                    )
+                    break
+                elif "오류" in response.text:
+                    logger.info(
+                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 없는 시간"
+                    )
+                elif "동시예약" in response.text:
+                    logger.info(
+                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 동시예약으로 인한 실패"
+                    )
+                elif (
+                    "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in response.text
+                ):
+                    logger.info(
+                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
+                    )
 
     def __preload_session(self) -> requests.Session:
         # Selenium에서 로그인 등 필요한 쿠키 가져오기
