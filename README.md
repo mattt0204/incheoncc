@@ -11,3 +11,7 @@
 
 # 에러
 1. 에러 후  캘린더 클릭 리커버리
+
+
+# 서버시간 이용
+https://time.navyism.com/?host=www.incheoncc.com
