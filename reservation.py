@@ -192,6 +192,11 @@ class SessionPostReservation(ReserveMethod):
                     logger.info(
                         f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 다른 곳에서 로그인 함(세션 불일치)"
                     )
+                else:
+                    # TODO: 원인 파악 필요
+                    logger.info(
+                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 알 수 없는 오류"
+                    )
             if is_success:
                 break
 
