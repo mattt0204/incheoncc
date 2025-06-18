@@ -1,6 +1,9 @@
+import json
 import os
 import re
+import urllib.parse
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import requests
 from selenium import webdriver
@@ -194,6 +197,36 @@ class SessionPostReservation(ReserveMethod):
                     )
                 else:
                     # TODO: 원인 파악 필요
+                    def decode_unicode_url(text):
+                        """URL 인코딩된 유니코드 문자열을 디코딩합니다."""
+                        # %uXXXX 형식의 유니코드 문자를 디코딩
+                        pattern = r"%u([0-9a-fA-F]{4})"
+                        text = re.sub(pattern, lambda m: chr(int(m.group(1), 16)), text)
+
+                        # 일반적인 URL 인코딩 (%20 등)을 디코딩
+                        return urllib.parse.unquote(text)
+
+                    # 현재 시간을 파일명에 포함하여 저장
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    error_filename = f"error_response_{timestamp}.json"
+
+                    # response.text를 디코딩하고 JSON 파일로 저장
+                    decoded_text = decode_unicode_url(response.text)
+
+                    with open(error_filename, "w", encoding="utf-8") as f:
+                        json.dump(
+                            {
+                                "response_text": response.text,
+                                "decoded_text": decoded_text,
+                                "pointtime": payload["pointtime"],
+                                "pointid": payload["pointid"],
+                                "attempt": idx,
+                            },
+                            f,
+                            ensure_ascii=False,
+                            indent=2,
+                        )
+
                     logger.info(
                         f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 알 수 없는 오류"
                     )

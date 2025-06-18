@@ -10,6 +10,7 @@ dependencies = [
     "loguru>=0.7.3",
     "notebook>=7.4.2",
     "pyside6>=6.9.0",
+    "pytest>=8.4.1",
     "selenium>=4.32.0",
     "webdriver-manager>=4.0.2",
 ]

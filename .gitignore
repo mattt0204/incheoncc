@@ -14,4 +14,4 @@ pyvenv.cfg
 
 .ipynb_checkpoints
 
-logs.csv
+*.csv
