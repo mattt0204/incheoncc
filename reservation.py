@@ -75,9 +75,7 @@ class DomApiReservation(ReserveMethod):
             self.__go_to_pointdate_page(yyyy_mm_dd)
             # 2. 예약 가능한 코스 찾고 우선순위대로 정렬하기
             self.__make_courses_applied_priority(time_range_model)
-            logger.info(
-                f"예약 가능한 코스 찾고 우선순위대로 정렬하기: {self.courses_of_priority}"
-            )
+            logger.info(f"정렬된 예약 가능한 코스: {self.courses_of_priority}")
         # 3. 우선순위 1순위 테스트
         # 3a 실패하면 SessionPost 방식으로 예약 시도
         # 4. 예약상세 페이지에서 예약 버튼 누르기
@@ -146,7 +144,6 @@ class DomApiReservation(ReserveMethod):
                     OutInType.OUT if course_out_in_number == "OUT" else OutInType.IN
                 )
                 scrpaed_courses.append(Course(out_in_type, course_time))
-        logger.info(f"예약 가능한 코스 찾기(정렬 전): {scrpaed_courses}")
 
         def time_to_minutes(tstr):
             h, m = map(int, tstr.split(":"))
