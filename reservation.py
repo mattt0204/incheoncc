@@ -9,7 +9,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from custom_logger import logger
+from moniter import GolfReservationMonitor
 from pick_datetime_model import (
+    Course,
+    OutInType,
     ReservationScheduler,
     ReservationStrategy,
     TimePoint,
@@ -58,10 +61,39 @@ class ReserveMethod(ABC):
 
 # 1. DoM API 방식 (셀레니움 등)
 class DomApiReservation(ReserveMethod):
+
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+        if not yyyy_mm_dd:
+            raise ValueError("날짜가 없습니다.")
         logger.info("돔 API를 이용하여 예약하기")
-        # self.driver
+        self.__go_to_reservation_page()
+        monitor = GolfReservationMonitor(self.driver.get_cookies())
+
+        # 1. 캘린더 모니터링 하기
+        if monitor.monitor_is_alive_date(yyyy_mm_dd):
+            self.driver.refresh()
+            self.__go_to_pointdate_page(yyyy_mm_dd)
+            # 2. 예약 가능한 코스 찾고 우선순위대로 정렬하기
+            self.__make_courses_applied_priority(time_range_model)
+            logger.info(
+                f"예약 가능한 코스 찾고 우선순위대로 정렬하기: {self.courses_of_priority}"
+            )
+        # 3. 우선순위 1순위 테스트
+        # 3a 실패하면 SessionPost 방식으로 예약 시도
+        # 4. 예약상세 페이지에서 예약 버튼 누르기
+        # 4a 실패하면 SessionPost 방식으로 예약 시도
+        # 5. 예약 확인 페이지에서 예약 완료 확인 보고 후 다시, 예약하기 페이지로 이동
+
         pass
+
+    def __go_to_reservation_page(self):
+        """예약페이지로 이동"""
+        reservation_url = (
+            "https://www.incheoncc.com:1436/GolfRes/onepage/real_reservation.asp"
+        )
+        if reservation_url in self.driver.current_url:
+            return
+        self.driver.get(reservation_url)
 
     def __go_to_pointdate_page(self, yyyy_mm_dd):
         """yyyy_mm_dd 형식의 날짜를 클릭하여 페이지를 이동합니다."""
@@ -101,14 +133,20 @@ class DomApiReservation(ReserveMethod):
         # row 모두 수집하지 않은 이유는 어차피 stale 걸릴 거라서
 
         # 결과를 저장할 list
-        course_times_scrpaed = []
+        scrpaed_courses = []
 
         # 각 행을 순회하며 데이터 추출
         for row in rows:
             cells = row.find_elements(By.TAG_NAME, "td")
             if len(cells) >= 7:  # 모든 컬럼이 있는지 확인
+                course_out_in_number = cells[1].text
                 course_time = cells[2].text
-                course_times_scrpaed.append(course_time)
+                # 문자열을 OutInType enum으로 변환
+                out_in_type = (
+                    OutInType.OUT if course_out_in_number == "OUT" else OutInType.IN
+                )
+                scrpaed_courses.append(Course(out_in_type, course_time))
+        logger.info(f"예약 가능한 코스 찾기(정렬 전): {scrpaed_courses}")
 
         def time_to_minutes(tstr):
             h, m = map(int, tstr.split(":"))
@@ -121,14 +159,14 @@ class DomApiReservation(ReserveMethod):
             + time_range_model.priority_time.minute
         )
         filtered = [
-            course_time
-            for course_time in course_times_scrpaed
-            if time_to_minutes(course_time) >= start_minutes
-            and time_to_minutes(course_time) <= end_minutes
+            course
+            for course in scrpaed_courses
+            if time_to_minutes(course.time) >= start_minutes
+            and time_to_minutes(course.time) <= end_minutes
         ]
         sorted_course_times = sorted(
             filtered,
-            key=lambda x: abs(time_to_minutes(x) - priority_minutes),
+            key=lambda x: abs(time_to_minutes(x.time) - priority_minutes),
         )
 
         self.courses_of_priority = sorted_course_times
@@ -161,6 +199,8 @@ class SessionPostReservation(ReserveMethod):
     """Session Post 방식으로 예약을 진행합니다."""
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+        if not yyyy_mm_dd:
+            raise ValueError("날짜가 없습니다.")
         tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
         session = self.__preload_session()
         reserve_ok_url = "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
@@ -285,5 +325,3 @@ class Reservation:
         elif scheduler == ReservationScheduler.NOW:
             # 즉시 실행
             reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
-        else:
-            raise ValueError("지원하지 않는 실행 시점(when)입니다.")

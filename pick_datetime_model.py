@@ -196,3 +196,14 @@ class ReservationStrategy(Enum):
 class ReservationScheduler(Enum):
     NOW = "NOW"  # 지금 실행
     CRON = "CRON"  # 화/목 9시 실행
+
+
+class OutInType(Enum):
+    OUT = 1  # 아웃 코스
+    IN = 2  # 인 코스
+
+
+@dataclass
+class Course:
+    out_in_number: OutInType
+    time: str
