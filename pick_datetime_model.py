@@ -205,5 +205,6 @@ class OutInType(Enum):
 
 @dataclass
 class Course:
-    out_in_number: OutInType
+    point_id_out_in: OutInType
+    course_type: str
     time: str

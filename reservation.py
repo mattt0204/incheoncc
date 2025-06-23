@@ -135,7 +135,6 @@ class DomApiReservation(ReserveMethod):
             )
         )
         rows = table.find_elements(By.TAG_NAME, "tr")[1:]  # 헤더 행 제외
-        # row 모두 수집하지 않은 이유는 어차피 stale 걸릴 거라서
 
         # 결과를 저장할 list
         scrpaed_courses = []
@@ -143,14 +142,19 @@ class DomApiReservation(ReserveMethod):
         # 각 행을 순회하며 데이터 추출
         for row in rows:
             cells = row.find_elements(By.TAG_NAME, "td")
-            if len(cells) >= 7:  # 모든 컬럼이 있는지 확인
-                course_out_in_number = cells[1].text
-                course_time = cells[2].text
-                # 문자열을 OutInType enum으로 변환
-                out_in_type = (
-                    OutInType.OUT if course_out_in_number == "OUT" else OutInType.IN
+            if len(cells) != 7:  # 모든 컬럼이 있는지 확인
+                raise Exception("코스의 칼럼이 바뀌었습니다.")
+            course_type = cells[1].text
+            course_time = cells[2].text
+            # 문자열을 OutInType enum으로 변환
+            point_id_out_in = OutInType.OUT if course_type == "OUT" else OutInType.IN
+            scrpaed_courses.append(
+                Course(
+                    point_id_out_in=point_id_out_in,
+                    course_type=course_type,
+                    time=course_time,
                 )
-                scrpaed_courses.append(Course(out_in_type, course_time))
+            )
 
         def time_to_minutes(tstr):
             h, m = map(int, tstr.split(":"))
