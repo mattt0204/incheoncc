@@ -98,12 +98,13 @@ class GolfReservationMonitor:
             logger.info(f"오류 발생: {e}")
             return None
 
-    def monitor_is_alive_date(self, yyyymmdd: str) -> bool:
+    def monitor_is_alive_date(self, yyyymmdd: str, timeout_minutes: int = 10) -> bool:
         """
         원하는 날짜가 live 상태가 될 때까지 시간대별 모니터링
 
         Args:
             yyyymmdd (str): 모니터링할 날짜 (YYYYMMDD 형식)
+            timeout_minutes (int): 최대 모니터링 시간 (분 단위, 기본값: 10분)
 
         Returns:
             bool: True if 날짜가 live 상태가 됨, False if 시간 초과 또는 모니터링 불가
@@ -113,49 +114,67 @@ class GolfReservationMonitor:
         - 8시 59분 50초 ~ : 1초 간격
         """
 
+        start_time = datetime.datetime.now()
+        timeout_seconds = timeout_minutes * 60
+
         logger.info(f"🏌️ 골프 예약 모니터링 시작")
         logger.info(f"📅 대상 날짜: {yyyymmdd}")
         logger.info(f"⏰ 모니터링 시간:")
         logger.info(f"   • 00:00 ~ 08:59:50 → 1분 간격")
         logger.info(f"   • 08:59:50 ~ 24:00 → 1초 간격")
+        logger.info(f"   • 최대 모니터링 시간: {timeout_minutes}분")
+        logger.info(f"   • Ctrl+C로 언제든 중단 가능")
         logger.info("-" * 50)
 
         check_count = 0
         last_check_time = None
 
-        while True:
-            # 현재 시간 확인 및 모니터링 가능 여부 체크
-            can_monitor, wait_seconds = self.check_time_window()
-            current_time = datetime.datetime.now()
+        try:
+            while True:
+                # 타임아웃 체크
+                current_time = datetime.datetime.now()
+                elapsed_seconds = (current_time - start_time).total_seconds()
+                if elapsed_seconds >= timeout_seconds:
+                    logger.info(
+                        f"⏰ {timeout_minutes}분 타임아웃으로 모니터링을 종료합니다"
+                    )
+                    return False
 
-            # 중복 체크 방지 (같은 시간대에 여러 번 체크하지 않음) 8시에 확인 필요
-            if wait_seconds == 60:  # 1분 간격 모드
-                current_minute = current_time.replace(second=0, microsecond=0)
-                if last_check_time == current_minute:
-                    time.sleep(10)  # 10초 쉬기
-                    continue  # last_check_time = current_minute 무시? 혹은 while 자체를 무시?
-                last_check_time = current_minute
+                # 현재 시간 확인 및 모니터링 가능 여부 체크
+                can_monitor, wait_seconds = self.check_time_window()
 
-            # 모니터링 실행
-            check_count += 1
-            time_str = current_time.strftime("%H:%M:%S")
-            interval_str = "1분 간격" if wait_seconds == 60 else "1초 간격"
+                # 중복 체크 방지 (같은 시간대에 여러 번 체크하지 않음) 8시에 확인 필요
+                if wait_seconds == 60:  # 1분 간격 모드
+                    current_minute = current_time.replace(second=0, microsecond=0)
+                    if last_check_time == current_minute:
+                        time.sleep(10)  # 10초 쉬기
+                        continue  # last_check_time = current_minute 무시? 혹은 while 자체를 무시?
+                    last_check_time = current_minute
 
-            logger.info(f"🔍 검사 #{check_count} - {time_str} ({interval_str})")
+                # 모니터링 실행
+                check_count += 1
+                time_str = current_time.strftime("%H:%M:%S")
+                interval_str = "1분 간격" if wait_seconds == 60 else "1초 간격"
 
-            # 예약 상태 확인
-            is_live = self.check_calendar_data(yyyymmdd)
+                logger.info(f"🔍 검사 #{check_count} - {time_str} ({interval_str})")
 
-            if is_live is None:
-                logger.info("❌ 데이터 조회 실패")
-            elif is_live:
-                logger.info(f"✅ 성공! {yyyymmdd} 날짜가 예약 가능 상태입니다!")
-                return True
-            else:
-                logger.info(f"⏳ {yyyymmdd} 아직 예약 불가능...")
+                # 예약 상태 확인
+                is_live = self.check_calendar_data(yyyymmdd)
 
-            # 다음 체크까지 대기(주기 1초 또는 60초)
-            time.sleep(wait_seconds)
+                if is_live is None:
+                    logger.info("❌ 데이터 조회 실패")
+                elif is_live:
+                    logger.info(f"✅ 성공! {yyyymmdd} 날짜가 예약 가능 상태입니다!")
+                    return True
+                else:
+                    logger.info(f"⏳ {yyyymmdd} 아직 예약 불가능...")
+
+                # 다음 체크까지 대기(주기 1초 또는 60초)
+                time.sleep(wait_seconds)
+
+        except KeyboardInterrupt:
+            logger.info("🛑 사용자가 모니터링을 중단했습니다 (Ctrl+C)")
+            return False
 
     def check_calendar_data(self, yyyymmdd: str) -> Optional[bool]:
         """실제 달력 데이터 확인 (간소화된 버전)"""

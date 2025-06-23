@@ -70,12 +70,19 @@ class DomApiReservation(ReserveMethod):
         monitor = GolfReservationMonitor(self.driver.get_cookies())
 
         # 1. 캘린더 모니터링 하기
-        if monitor.monitor_is_alive_date(yyyy_mm_dd):
-            self.driver.refresh()
-            self.__go_to_pointdate_page(yyyy_mm_dd)
-            # 2. 예약 가능한 코스 찾고 우선순위대로 정렬하기
-            self.__make_courses_applied_priority(time_range_model)
-            logger.info(f"정렬된 예약 가능한 코스: {self.courses_of_priority}")
+        if not monitor.monitor_is_alive_date(yyyy_mm_dd):
+            logger.info(f"🛑 {yyyy_mm_dd} 날짜가 예약 불가능 상태입니다!")
+            raise RuntimeError(f"🛑 {yyyy_mm_dd} 날짜가 예약 불가능 상태입니다!")
+        # 2. 예약 페이지로 이동 후 예약 가능한 코스 찾고 우선순위대로 정렬하기
+        self.driver.refresh()
+        self.__go_to_pointdate_page(yyyy_mm_dd)
+        self.__make_courses_applied_priority(time_range_model)
+
+        if not self.courses_of_priority:
+            logger.info(f"🛑 {yyyy_mm_dd}에 선택한 시간 중 가능한 시간대가 없습니다!")
+            raise RuntimeError(f"🛑 {yyyy_mm_dd} 날짜가 예약 불가능 상태입니다!")
+
+        # queue 자료구조로 처리하도록 바꾸기(deque?)
         # 3. 우선순위 1순위 테스트
         # 3a 실패하면 SessionPost 방식으로 예약 시도
         # 4. 예약상세 페이지에서 예약 버튼 누르기
