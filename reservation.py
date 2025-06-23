@@ -1,9 +1,11 @@
 import os
 import re
 from abc import ABC, abstractmethod
+from collections import deque
 
 import requests
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -19,7 +21,7 @@ from pick_datetime_model import (
     TimeRange,
 )
 from scraper import IncheonCCScraper
-from utils import decode_unicode_url
+from utils import convert_date_format, decode_unicode_url
 
 
 # 전략 인터페이스
@@ -76,20 +78,75 @@ class DomApiReservation(ReserveMethod):
         # 2. 예약 페이지로 이동 후 예약 가능한 코스 찾고 우선순위대로 정렬하기
         self.driver.refresh()
         self.__go_to_pointdate_page(yyyy_mm_dd)
-        self.__make_courses_applied_priority(time_range_model)
+        sorted_courses = self.__make_courses_applied_priority(time_range_model)
 
-        if not self.courses_of_priority:
+        if not sorted_courses:
             logger.info(f"🛑 {yyyy_mm_dd}에 선택한 시간 중 가능한 시간대가 없습니다!")
             raise RuntimeError(f"🛑 {yyyy_mm_dd} 날짜가 예약 불가능 상태입니다!")
 
-        # queue 자료구조로 처리하도록 바꾸기(deque?)
-        # 3. 우선순위 1순위 테스트
-        # 3a 실패하면 SessionPost 방식으로 예약 시도
-        # 4. 예약상세 페이지에서 예약 버튼 누르기
-        # 4a 실패하면 SessionPost 방식으로 예약 시도
-        # 5. 예약 확인 페이지에서 예약 완료 확인 보고 후 다시, 예약하기 페이지로 이동
+        try:
+            courses_dq = deque(sorted_courses)
+            course = courses_dq.popleft()
+            self.__click_button_in_listpage(course)
+            self.__click_button_in_detailpage()
+        except NoSuchElementException as e:
+            esg_ele = self.driver.find_element("input_ajax")
+            if "ERROR" in esg_ele.text:
+                while courses_dq:
+                    course = courses_dq.popleft()
+                    # TODO: 예약 실패시 세션 방식으로 처리, while 문 처리
+                    # 쿠키 옮기고,데이터 만들고 session 만들어서 요청
 
-        pass
+        # 성공할 때만 실행
+        else:
+            if self.__check_reservation_success(yyyy_mm_dd, course):
+                logger.info(f"🎉 {yyyy_mm_dd} {course.time} 예약 성공")
+            else:
+                logger.info(f"🛑 {yyyy_mm_dd} {course.time} 예약 실패")
+
+    def __check_reservation_success(self, yyyy_mm_dd: str, course: Course):
+        reservation_complete_url = (
+            "https://www.incheoncc.com:1436/GolfRes/onepage/my_golfreslist.asp"
+        )
+        self.driver.get(reservation_complete_url)
+        converted_date = convert_date_format(yyyy_mm_dd)
+        table = self.driver.find_element(By.CLASS_NAME, "cm_time_list_tbl")
+        for reservation in table.find_elements(By.TAG_NAME, "tr")[1:]:
+            if (
+                reservation.find_elements(By.TAG_NAME, "td")[1].text == converted_date
+                and reservation.find_elements(By.TAG_NAME, "td")[2].text == course.time
+                and course.course_type
+                in reservation.find_elements(By.TAG_NAME, "td")[3].text
+            ):
+                return True
+        return False
+
+    def __click_button_in_detailpage(self):
+        btn = self.driver.find_element(By.XPATH, "//form/div/button[1]")
+        if btn.text == "예약":
+            btn.click()
+        ## 주석 해제시 예약 완료 처리 됨
+        # if EC.alert_is_present():
+        #     result = driver.switch_to.alert
+        #     result.accept()
+
+    def __click_button_in_listpage(self, course: Course):
+        wait = WebDriverWait(self.driver, 10)
+        table = wait.until(
+            EC.presence_of_element_located(
+                (
+                    By.CLASS_NAME,
+                    "cm_time_list_tbl",
+                )
+            )
+        )
+        # 헤더 제외한 행
+        rows = table.find_elements(By.TAG_NAME, "tr")[1:]
+        for row in rows:
+            cells = row.find_elements(By.TAG_NAME, "td")
+            if course.course_type == cells[1].text and course.time == cells[2].text:
+                cells[6].click()
+                break
 
     def __go_to_reservation_page(self):
         """예약페이지로 이동"""
@@ -172,34 +229,12 @@ class DomApiReservation(ReserveMethod):
             if time_to_minutes(course.time) >= start_minutes
             and time_to_minutes(course.time) <= end_minutes
         ]
-        sorted_course_times = sorted(
+        sorted_courses = sorted(
             filtered,
             key=lambda x: abs(time_to_minutes(x.time) - priority_minutes),
         )
 
-        self.courses_of_priority = sorted_course_times
-
-    def __reserve_course(self, yyyy_mm_dd: str, time_range_model: TimeRange):
-        """yyyy_mm_dd 형식의 날짜와 time_range_model을 이용하여 예약을 진행합니다.
-        selected_time: 05:06
-        3. 우선순위 배열 순서대로 신청합니다. 에러 발생시 코스 선택 페이지로 이동해서, 다시 실행합니다.
-        실패시 에러 페이지 확인 -> 다시 실시간 캘린더 눌러서, 코스 선택페이지로 이동해야함
-        """
-        if not self.courses_of_priority:
-            raise RuntimeError("코스가 없습니다.")
-
-        for course in self.courses_of_priority:
-            self.__reserve_course_by_time(course)
-
-    def __reserve_course_by_time(self, selected_time: str):
-        """
-        1. TABLE 에 같은 시간이 있다면, 예약 버튼을 눌러 예약 안내 엘리먼트를 불러옵니다.
-        2. 예약 안내 페이지로 진입시, 엘리먼트가 발생시, 다시 point_date_page로 이동 후 다시 예약을 시작합니다.
-        3. 예약 안내 페이지로 진입시, 엘리먼트가 정상적으로 작동하고, 버튼이 있다면, 버튼을 눌러 예약 완료를 합니다.
-        3. 예약 안내 페이지에서 예약 버튼을 누르고 에러가 발생한다면, 다시 point_date_page로 이동한 후 다시 예약을 시작합니다.
-
-        예약 후 예약 확인 페이지로 이동합니다."""
-        pass
+        return sorted_courses
 
 
 # 2. Session Post 방식
