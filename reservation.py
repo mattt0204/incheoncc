@@ -1,5 +1,4 @@
 import os
-import re
 from abc import ABC, abstractmethod
 from collections import deque
 
@@ -29,36 +28,13 @@ class ReserveMethod(ABC):
 
     def __init__(self, driver: webdriver.Chrome):
         self.driver = driver
+        self.reserve_ok_url = (
+            "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
+        )
 
     @abstractmethod
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         pass
-
-    # TODO: 예약 완료 확인까지 확인 완료
-    def is_course_reserved(self, yyyy_mm_dd: str, point_time: str):
-        """예약확인페이지에서 예약이 완료되었는지 확인합니다. point_time: 05:06"""
-        my_golfreslist_url = (
-            "https://www.incheoncc.com:1436/GolfRes/onepage/my_golfreslist.asp"
-        )
-        self.driver.get(my_golfreslist_url)
-        match = re.match(r"(\d{4})(\d{2})(\d{2})", yyyy_mm_dd)
-        reservation_date_for_check = ""
-        if match:
-            year, month, day = match.groups()
-            reservation_date_for_check = f"{year}년 {int(month):02d}월 {int(day):02d}일"
-        else:
-            raise RuntimeError("날짜 형식이 맞지 않습니다.")
-        table = self.driver.find_element(By.CLASS_NAME, "cm_time_list_tbl")
-
-        for reservation in table.find_elements(By.TAG_NAME, "tr")[1:]:
-            if (
-                reservation.find_elements(By.TAG_NAME, "td")[1].text
-                == reservation_date_for_check
-                and reservation.find_elements(By.TAG_NAME, "td")[2].text == point_time
-            ):
-                return True
-
-        return False
 
 
 # 1. DoM API 방식 (셀레니움 등)
@@ -92,10 +68,40 @@ class DomApiReservation(ReserveMethod):
         except NoSuchElementException as e:
             esg_ele = self.driver.find_element("input_ajax")
             if "ERROR" in esg_ele.text:
+                # 선점에 의한 에러
                 while courses_dq:
                     course = courses_dq.popleft()
                     # TODO: 예약 실패시 세션 방식으로 처리, while 문 처리
-                    # 쿠키 옮기고,데이터 만들고 session 만들어서 요청
+                    session = self.__preload_session()
+                    payload = self.__make_payload(yyyy_mm_dd, course)
+                    response = session.post(self.reserve_ok_url, data=payload)
+                    idx = 2
+                    if "OK" in response.text:
+                        logger.info(
+                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 성공"
+                        )
+                        # while 문 종료
+                        break
+                    elif "오류" in decode_unicode_url(response.text):
+                        logger.info(
+                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 없는 시간"
+                        )
+                    elif "동시예약" in decode_unicode_url(response.text):
+                        logger.info(
+                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 동시예약으로 인한 실패"
+                        )
+                    elif (
+                        "다른 곳에서 회원님의 아이디로 로그인 되었습니다."
+                        in decode_unicode_url(response.text)
+                    ):
+                        logger.info(
+                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 이중 로그인로 인한 실패"
+                        )
+                    else:
+                        logger.info(
+                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 원인이 밝혀지지 않은 실패"
+                        )
+                    idx += 1
 
         # 성공할 때만 실행
         else:
@@ -103,6 +109,45 @@ class DomApiReservation(ReserveMethod):
                 logger.info(f"🎉 {yyyy_mm_dd} {course.time} 예약 성공")
             else:
                 logger.info(f"🛑 {yyyy_mm_dd} {course.time} 예약 실패")
+
+        finally:
+            logger.info("예약 프로세스: DOMAPI 매크로 종료")
+
+    def __preload_session(self):
+        selenium_cookies = self.driver.get_cookies()
+        session = requests.Session()
+        for cookie in selenium_cookies:
+            session.cookies.set(cookie["name"], cookie["value"])
+        return session
+
+    def __make_payload(self, yyyy_mm_dd: str, course: Course):
+
+        # environ
+        hand_tel1 = os.environ.get("HAND_TEL1")
+        hand_tel2 = os.environ.get("HAND_TEL2")
+        hand_tel3 = os.environ.get("HAND_TEL3")
+        # POST 요청에 사용할 데이터
+        return {
+            "cmd": "ins",
+            "cmval": "0",
+            "cmrtype": "N",
+            "calltype": "AJAX",
+            "gonexturl": "/GolfRes/onepage/my_golfreslist.asp",
+            "pointdate": yyyy_mm_dd,
+            "openyn": "1",
+            "dategbn": "6",
+            "pointid": course.point_id_out_in,
+            "pointtime": course.strf_hhmm(),
+            "flagtype": "I",
+            "punish_cd": "UNABLE",
+            "self_r_yn": "N",
+            "res_gubun": "N",
+            "usrmemcd": "12",
+            "memberno": "12061000",
+            "hand_tel1": hand_tel1,
+            "hand_tel2": hand_tel2,
+            "hand_tel3": hand_tel3,
+        }
 
     def __check_reservation_success(self, yyyy_mm_dd: str, course: Course):
         reservation_complete_url = (
@@ -246,7 +291,6 @@ class SessionPostReservation(ReserveMethod):
             raise ValueError("날짜가 없습니다.")
         tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
         session = self.__preload_session()
-        reserve_ok_url = "https://www.incheoncc.com:1436/GolfRes/onepage/real_resok.asp"
         logger.info("세션 직접 요청으로 예약하기")
         is_success = False
         for idx, time_point in enumerate(tps_priority, start=1):
@@ -255,7 +299,7 @@ class SessionPostReservation(ReserveMethod):
                 logger.info(
                     f"{payload["pointdate"]}/{payload["pointtime"]}/{payload["pointid"]}"
                 )
-                response = session.post(reserve_ok_url, data=payload)
+                response = session.post(self.reserve_ok_url, data=payload)
                 if "OK" in response.text:
                     logger.info(
                         f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 성공"
@@ -281,6 +325,7 @@ class SessionPostReservation(ReserveMethod):
                     logger.info(
                         f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 원인이 밝혀지지 않은 실패"
                     )
+                idx += 1
             if is_success:
                 break
 
