@@ -101,6 +101,9 @@ class DomApiReservation(ReserveMethod):
                         logger.info(
                             f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 원인이 밝혀지지 않은 실패"
                         )
+                        logger.info(
+                            f"response.text: {decode_unicode_url(response.text)}"
+                        )
                     idx += 1
 
         # 성공할 때만 실행
@@ -325,6 +328,7 @@ class SessionPostReservation(ReserveMethod):
                     logger.info(
                         f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 원인이 밝혀지지 않은 실패"
                     )
+                    logger.info(f"response.text: {decode_unicode_url(response.text)}")
                 idx += 1
             if is_success:
                 break
