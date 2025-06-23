@@ -208,3 +208,6 @@ class Course:
     point_id_out_in: OutInType
     course_type: str
     time: str
+
+    def strf_hhmm(self):
+        return self.time.replace(":", "")
