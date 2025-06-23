@@ -67,13 +67,15 @@ class GolfReservationMonitor:
 
             # 타겟 날짜에서 년월 추출
             yyyymm = yyyymmdd[:6]  # YYYYMM
+            now_yyyymm = datetime.datetime.now().strftime("%Y%m")
+            calnum = "1" if yyyymm == now_yyyymm else "2"
             # POST 데이터 준비
             post_data = {
                 "golfrestype": "real",
                 "schDate": yyyymm,
                 "usrmemcd": "12",  # 유저멤버번호
                 "toDay": yyyymmdd,
-                "calnum": "1",  # 다음달이면 2
+                "calnum": calnum,
             }
 
             response = self.session.post(calendar_url, data=post_data)
