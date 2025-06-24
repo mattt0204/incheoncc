@@ -4,7 +4,7 @@ from collections import deque
 
 import requests
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common import NoSuchElementException, UnexpectedAlertPresentException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -41,16 +41,17 @@ class ReserveMethod(ABC):
 class DomApiReservation(ReserveMethod):
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+        ## TODO: 테스트 용도 주석 해제
+        yyyy_mm_dd = "20250801"
+        logger.info("DOM API를 이용하여 예약하기")
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
-        logger.info("돔 API를 이용하여 예약하기")
-        self.__go_to_reservation_page()
         monitor = GolfReservationMonitor(self.driver.get_cookies())
 
         # 1. 캘린더 모니터링 하기
         if not monitor.monitor_is_alive_date(yyyy_mm_dd):
             logger.info(f"🛑 {yyyy_mm_dd} 날짜가 예약 불가능 상태입니다!")
-            raise RuntimeError(f"🛑 {yyyy_mm_dd} 날짜가 예약 불가능 상태입니다!")
+
         # 2. 예약 페이지로 이동 후 예약 가능한 코스 찾고 우선순위대로 정렬하기
         self.driver.refresh()
         self.__go_to_pointdate_page(yyyy_mm_dd)
@@ -153,30 +154,46 @@ class DomApiReservation(ReserveMethod):
         }
 
     def __check_reservation_success(self, yyyy_mm_dd: str, course: Course):
-        reservation_complete_url = (
-            "https://www.incheoncc.com:1436/GolfRes/onepage/my_golfreslist.asp"
-        )
-        self.driver.get(reservation_complete_url)
-        converted_date = convert_date_format(yyyy_mm_dd)
-        table = self.driver.find_element(By.CLASS_NAME, "cm_time_list_tbl")
-        for reservation in table.find_elements(By.TAG_NAME, "tr")[1:]:
-            if (
-                reservation.find_elements(By.TAG_NAME, "td")[1].text == converted_date
-                and reservation.find_elements(By.TAG_NAME, "td")[2].text == course.time
-                and course.course_type
-                in reservation.find_elements(By.TAG_NAME, "td")[3].text
-            ):
-                return True
-        return False
+        try:
+            reservation_complete_url = (
+                "https://www.incheoncc.com:1436/GolfRes/onepage/my_golfreslist.asp"
+            )
+            self.driver.get(reservation_complete_url)
+            converted_date = convert_date_format(yyyy_mm_dd)
+            table = self.driver.find_element(By.CLASS_NAME, "cm_time_list_tbl")
+            for reservation in table.find_elements(By.TAG_NAME, "tr")[1:]:
+                if (
+                    reservation.find_elements(By.TAG_NAME, "td")[1].text
+                    == converted_date
+                    and reservation.find_elements(By.TAG_NAME, "td")[2].text
+                    == course.time
+                    and course.course_type
+                    in reservation.find_elements(By.TAG_NAME, "td")[3].text
+                ):
+                    return True
+            return False
+        except UnexpectedAlertPresentException as e:
+            if not e.alert_text:
+                return False
+            if "주말 총 예약선점 가능횟수는 최대 2회 입니다." in e.alert_text:
+                logger.info(f"예약 완료 확인 중 예상치 못한 알림 발생: {e.msg}")
+                if EC.alert_is_present():
+                    result = self.driver.switch_to.alert
+                    result.accept()
+
+                return False
+            else:
+                raise e
 
     def __click_button_in_detailpage(self):
+
         btn = self.driver.find_element(By.XPATH, "//form/div/button[1]")
         if btn.text == "예약":
             btn.click()
-        ## 주석 해제시 예약 완료 처리 됨
-        # if EC.alert_is_present():
-        #     result = driver.switch_to.alert
-        #     result.accept()
+        # 주석 해제시 예약 완료 처리 됨
+        if EC.alert_is_present():
+            result = self.driver.switch_to.alert
+            result.accept()
 
     def __click_button_in_listpage(self, course: Course):
         wait = WebDriverWait(self.driver, 10)
@@ -195,15 +212,6 @@ class DomApiReservation(ReserveMethod):
             if course.course_type == cells[1].text and course.time == cells[2].text:
                 cells[6].click()
                 break
-
-    def __go_to_reservation_page(self):
-        """예약페이지로 이동"""
-        reservation_url = (
-            "https://www.incheoncc.com:1436/GolfRes/onepage/real_reservation.asp"
-        )
-        if reservation_url in self.driver.current_url:
-            return
-        self.driver.get(reservation_url)
 
     def __go_to_pointdate_page(self, yyyy_mm_dd):
         """yyyy_mm_dd 형식의 날짜를 클릭하여 페이지를 이동합니다."""
@@ -290,11 +298,11 @@ class SessionPostReservation(ReserveMethod):
     """Session Post 방식으로 예약을 진행합니다."""
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+        logger.info("서버에 직접 요청 방식으로 예약하기")
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
         tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
         session = self.__preload_session()
-        logger.info("세션 직접 요청으로 예약하기")
         is_success = False
         for idx, time_point in enumerate(tps_priority, start=1):
             for point_id_out_in in ["1", "2"]:
