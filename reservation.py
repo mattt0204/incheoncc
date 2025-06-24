@@ -1,4 +1,5 @@
 import os
+import time
 from abc import ABC, abstractmethod
 from collections import deque
 
@@ -19,6 +20,7 @@ from pick_datetime_model import (
     TimePoint,
     TimeRange,
 )
+from scheduler import CronScheduler
 from scraper import IncheonCCScraper
 from utils import convert_date_format, decode_unicode_url
 
@@ -41,9 +43,9 @@ class ReserveMethod(ABC):
 class DomApiReservation(ReserveMethod):
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
-        ## TODO: 주석 해제시 , 실제 입력
-        yyyy_mm_dd = "20250801"
         logger.info("DOM API를 이용하여 예약하기")
+        raise Exception("test")
+
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
         monitor = GolfReservationMonitor(self.driver.get_cookies())
@@ -299,6 +301,7 @@ class SessionPostReservation(ReserveMethod):
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         logger.info("서버에 직접 요청 방식으로 예약하기")
+        raise Exception("test")
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
         tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
@@ -409,19 +412,31 @@ class Reservation:
         strategy: ReservationStrategy,
         scheduler: ReservationScheduler,
     ):
-        # 실제 예약 실행(예약방식,how에 따라 달라짐)
         if strategy == ReservationStrategy.SESSION:
             reservation_method = SessionPostReservation(self.scraper.driver)
         elif strategy == ReservationStrategy.DOM:
             reservation_method = DomApiReservation(self.scraper.driver)
-        else:
-            raise ValueError("지원하지 않는 예약 방식(how)입니다.")
 
         if scheduler == ReservationScheduler.CRON:
-            # 예약된 시간까지 대기 후 실행 (예: scheduler 사용)
-            # self.scheduler.wait_until_reserved_time()
-            # reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
+            logger.info("CRON 방식으로 예약하기")
+            cron = CronScheduler()
+            # 화, 목 오전 9시 (KST, 로컬 컴퓨터 시스템 시간 기준)
+            cron.add(
+                reservation_method.reserve,
+                name=reservation_method.__class__.__name__,
+                day_of_week="tue,thu",
+                hour=9,
+                minute=0,
+                yyyy_mm_dd=self.yyyy_mm_dd,
+                time_range_model=self.time_range_model,
+            )
+            cron.start()
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                cron.stop()
+
             pass
         elif scheduler == ReservationScheduler.NOW:
-            # 즉시 실행
             reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
