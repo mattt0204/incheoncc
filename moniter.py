@@ -11,6 +11,9 @@ from user_agent import get_random_user_agent
 
 class GolfReservationMonitor:
     def __init__(self, selenium_cookies):
+        self.hour = 18
+        self.minute = 44
+        self.second = 50
         self.base_url = "https://www.incheoncc.com:1436"
         self.session = requests.Session()
         # 기본 헤더 설정 (실제 브라우저처럼 보이게)
@@ -36,13 +39,15 @@ class GolfReservationMonitor:
             tuple[bool, int]: (모니터링 가능 여부, 다음 체크까지 대기 시간(초))
 
         시간대별 모니터링 주기:
-        - 8시 51분 ~ 8시 59분: 1분에 1번 (60초 간격)
-        - 8시 59분 50초 ~ 9시 10분: 1초에 1번 (1초 간격)
+        - ~ 8시 59분 50초 : 1분에 1번 (60초 간격)
+        - 8시 59분 50초 ~ : 1초에 1번 (1초 간격)
         """
         now = datetime.datetime.now()
 
         # 시간대 정의
-        criterion = now.replace(hour=8, minute=59, second=50, microsecond=0)
+        criterion = now.replace(
+            hour=self.hour, minute=self.minute, second=self.second, microsecond=0
+        )
 
         if now < criterion:
             # ~ 8시 59분 50초 : 1분 간격
@@ -146,12 +151,24 @@ class GolfReservationMonitor:
                 can_monitor, wait_seconds = self.check_time_window()
 
                 # 중복 체크 방지 (같은 시간대에 여러 번 체크하지 않음) 8시에 확인 필요
-                if wait_seconds == 60:  # 1분 간격 모드
-                    current_minute = current_time.replace(second=0, microsecond=0)
-                    if last_check_time == current_minute:
-                        time.sleep(10)  # 10초 쉬기
-                        continue  # last_check_time = current_minute 무시? 혹은 while 자체를 무시?
-                    last_check_time = current_minute
+                if wait_seconds == 60:
+                    # 다음 체크 예정 시간이 8:59:50을 넘기면, 8:59:50에 맞춰서 sleep
+                    now = datetime.datetime.now()
+                    next_check = now + datetime.timedelta(seconds=wait_seconds)
+                    switch_time = now.replace(
+                        hour=self.hour,
+                        minute=self.minute,
+                        second=self.second,
+                        microsecond=0,
+                    )
+                    if next_check > switch_time > now:
+                        # 8:59:50까지 남은 초만큼 sleep
+                        sleep_seconds = (switch_time - now).total_seconds()
+                        time.sleep(sleep_seconds)
+                    else:
+                        time.sleep(wait_seconds)
+                else:
+                    time.sleep(wait_seconds)
 
                 # 모니터링 실행
                 check_count += 1
@@ -170,9 +187,6 @@ class GolfReservationMonitor:
                     return True
                 else:
                     logger.info(f"⏳ {yyyymmdd} 아직 예약 불가능...")
-
-                # 다음 체크까지 대기(주기 1초 또는 60초)
-                time.sleep(wait_seconds)
 
         except KeyboardInterrupt:
             logger.info("🛑 사용자가 모니터링을 중단했습니다 (Ctrl+C)")
