@@ -11,8 +11,8 @@ from user_agent import get_random_user_agent
 
 class GolfReservationMonitor:
     def __init__(self, selenium_cookies):
-        self.hour = 18
-        self.minute = 44
+        self.hour = 8
+        self.minute = 59
         self.second = 50
         self.base_url = "https://www.incheoncc.com:1436"
         self.session = requests.Session()
