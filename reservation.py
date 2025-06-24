@@ -41,7 +41,7 @@ class ReserveMethod(ABC):
 class DomApiReservation(ReserveMethod):
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
-        ## TODO: 테스트 용도 주석 해제
+        ## TODO: 주석 해제시 , 실제 입력
         yyyy_mm_dd = "20250801"
         logger.info("DOM API를 이용하여 예약하기")
         if not yyyy_mm_dd:
