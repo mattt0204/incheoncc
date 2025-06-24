@@ -47,6 +47,15 @@ class PickDatetimeViewModel(QObject):
     def reserve_course(
         self, strategy: ReservationStrategy, scheduler: ReservationScheduler
     ):
+
+        try:
+            self.scraper.go_to_reservation_page()
+        except Exception as e:
+            # 새롭게 만들어서 driver 초기화
+            self.scraper = IncheonCCScraper()
+            self.scraper.login()
+            self.scraper.go_to_reservation_page()
+
         """Reservation 클래스 만들고 난 후 실행"""
         reservation = Reservation(
             scraper=self.scraper,
@@ -57,6 +66,7 @@ class PickDatetimeViewModel(QObject):
                 priority_time=self.priority_time,
             ),
         )
+
         reservation.execute(
             strategy=strategy,
             scheduler=scheduler,

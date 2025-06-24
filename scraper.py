@@ -38,7 +38,7 @@ class IncheonCCScraper:
 
         self.__go_to_home_page()
         self.__login()
-        self.__go_to_reservation_page()
+        self.go_to_reservation_page()
 
     def __go_to_home_page(self):
         home_path = "https://www.incheoncc.com:1436/index.asp"
@@ -92,7 +92,7 @@ class IncheonCCScraper:
         # 메인 윈도우로 다시 전환
         self.driver.switch_to.window(self.driver.window_handles[0])
 
-    def __go_to_reservation_page(self):
+    def go_to_reservation_page(self):
         reservation_url = (
             "https://www.incheoncc.com:1436/GolfRes/onepage/real_reservation.asp"
         )
