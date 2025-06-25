@@ -175,7 +175,3 @@ class PickDatetimeView(QWidget):
         self.app.quit()
         # TODO: 코드 리팩토링이 필요
         self.view_model.scraper.driver.quit()
-
-
-# TODO: 시간 레인지 view model의 데이터와 연결
-# TODO: 화,수,금 테스트 필요
