@@ -1,6 +1,6 @@
 import arrow
 from apscheduler.schedulers.background import BackgroundScheduler
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QStyledItemDelegate
 
 from custom_logger import logger
@@ -17,8 +17,11 @@ from scraper import IncheonCCScraper
 
 class PickDatetimeViewModel(QObject):
     # 추후 선택한 Input 값에 대한 Signal 사용으로 view에 업데이트
+    session_cron_active_changed = Signal(bool)
+    dom_cron_active_changed = Signal(bool)
 
     def __init__(self, scraper: IncheonCCScraper):
+        super().__init__()
         self.scraper = scraper
         self.dates_model = PickDateModel()
         self.start: TimePoint = TimePoint(hour=7, minute=0)
@@ -28,11 +31,31 @@ class PickDatetimeViewModel(QObject):
         self.load_dates()
         self.scheduler = BackgroundScheduler()
         self.scheduler.start()
-        self.session_cron_active = False  # Session CRON 상태
-        self.dom_cron_active = False  # DOM CRON 상태
+        self._session_cron_active = False  # Session CRON 상태
+        self._dom_cron_active = False  # DOM CRON 상태
         self.day_of_week = "tue,wed,thu"  # 예약 요일
         self.hour = 9  # 예약 시간(시)
         self.minute = 0  # 예약 시간(분)
+
+    @property
+    def session_cron_active(self):
+        return self._session_cron_active
+
+    @session_cron_active.setter
+    def session_cron_active(self, value):
+        if self._session_cron_active != value:
+            self._session_cron_active = value
+            self.session_cron_active_changed.emit(value)
+
+    @property
+    def dom_cron_active(self):
+        return self._dom_cron_active
+
+    @dom_cron_active.setter
+    def dom_cron_active(self, value):
+        if self._dom_cron_active != value:
+            self._dom_cron_active = value
+            self.dom_cron_active_changed.emit(value)
 
     def load_dates(self):
         # 가능한 날짜 선택하게 하기
@@ -121,6 +144,9 @@ class PickDatetimeViewModel(QObject):
         self.scheduler.remove_all_jobs()
         self.session_cron_active = False
         self.dom_cron_active = False
+
+    def __del__(self):
+        logger.info("PickDatetimeViewModel 소멸됨")
 
 
 class DateWithWeekdayDelegate(QStyledItemDelegate):
