@@ -1,5 +1,4 @@
 import os
-import time
 from abc import ABC, abstractmethod
 from collections import deque
 
@@ -424,19 +423,13 @@ class Reservation:
             cron.add(
                 reservation_method.reserve,
                 name=reservation_method.__class__.__name__,
-                day_of_week="tue,thu",
-                hour=9,
-                minute=0,
+                day_of_week="tue,wed,thu",
+                hour=13,
+                minute=18,
                 yyyy_mm_dd=self.yyyy_mm_dd,
                 time_range_model=self.time_range_model,
             )
             cron.start()
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                cron.stop()
 
-            pass
         elif scheduler == ReservationScheduler.NOW:
             reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
