@@ -18,6 +18,10 @@ class PickDatetimeView(QWidget):
         self.app = app
         self.view_model = view_model
         self.setup_ui()
+        self.session_cron_active = False  # 상태 변수
+        self.session_cron_scheduler = None  # CronScheduler 인스턴스 저장
+        self.dom_cron_active = False  # DOM CRON 상태 변수
+        self.dom_cron_scheduler = None  # DOM CRON 스케줄러 저장
 
     def setup_ui(self):
         self.setWindowTitle("날짜와 시간 선택")
@@ -74,9 +78,9 @@ class PickDatetimeView(QWidget):
         self.cancel_layout.addStretch()
 
         self.execute_session_now = QPushButton("직접 요청/지금 실행")
-        self.execute_session_cron = QPushButton("직접 요청/화,목 9시 실행")
+        self.execute_session_cron = QPushButton("직접 요청/화,목 9시 예약하기")
         self.execute_dom_now = QPushButton("DOM 요청/지금 실행")
-        self.execute_dom_cron = QPushButton("DOM 요청/화,목 9시 실행")
+        self.execute_dom_cron = QPushButton("DOM 요청/화,목 9시 예약하기")
 
         # 2행: 나머지 버튼
         self.action_layout = QHBoxLayout()
@@ -143,19 +147,16 @@ class PickDatetimeView(QWidget):
         self.view_model.reserve_course(
             ReservationStrategy.SESSION, ReservationScheduler.NOW
         )
-        # 지금 실행 / cron job 실행
-        # DOMAPI 방식 / Session Post 방식
-        # TODO: 지금은 Session post / 지금 실행 방식으로 먼저 개발
-
-        # TODO: 예약 확인 페이지에서 예약이 완료되었는지 확인하고 완료되었다면 예약 완료 문구 발생
-
-        pass
 
     def on_session_cron(self):
-        self.view_model.reserve_course(
-            ReservationStrategy.SESSION, ReservationScheduler.CRON
-        )
-        pass
+        self.__set_selected_info()
+        # Reservation 인스턴스 생성 (필요시)
+        # ViewModel의 토글 메서드 호출
+        is_active = self.view_model.toggle_session_cron(ReservationStrategy.SESSION)
+        if is_active:
+            self.execute_session_cron.setText("예약 완료(클릭시 취소)")
+        else:
+            self.execute_session_cron.setText("직접 요청/화,목 9시 예약하기")
 
     def on_dom_now(self):
         self.__set_selected_info()
@@ -165,13 +166,13 @@ class PickDatetimeView(QWidget):
 
     def on_dom_cron(self):
         self.__set_selected_info()
-        self.view_model.reserve_course(
-            ReservationStrategy.DOM, ReservationScheduler.CRON
-        )
+        is_active = self.view_model.toggle_dom_cron(ReservationStrategy.DOM)
+        if is_active:
+            self.execute_dom_cron.setText("예약 완료(클릭시 취소)")
+        else:
+            self.execute_dom_cron.setText("DOM 요청/화,목 9시 예약하기")
 
     def on_cancel_clicked(self):
-        # TODO: Cron 취소
-
+        self.view_model.stop_all_cron()  # ViewModel에서 모든 스케줄러 종료
         self.app.quit()
-        # TODO: 코드 리팩토링이 필요
         self.view_model.scraper.driver.quit()

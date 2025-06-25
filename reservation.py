@@ -14,12 +14,10 @@ from moniter import GolfReservationMonitor
 from pick_datetime_model import (
     Course,
     OutInType,
-    ReservationScheduler,
     ReservationStrategy,
     TimePoint,
     TimeRange,
 )
-from scheduler import CronScheduler
 from scraper import IncheonCCScraper
 from utils import convert_date_format, decode_unicode_url
 
@@ -409,27 +407,10 @@ class Reservation:
     def execute(
         self,
         strategy: ReservationStrategy,
-        scheduler: ReservationScheduler,
     ):
         if strategy == ReservationStrategy.SESSION:
             reservation_method = SessionPostReservation(self.scraper.driver)
         elif strategy == ReservationStrategy.DOM:
             reservation_method = DomApiReservation(self.scraper.driver)
 
-        if scheduler == ReservationScheduler.CRON:
-            logger.info("CRON 방식으로 예약하기")
-            cron = CronScheduler()
-            # 화, 목 오전 9시 (KST, 로컬 컴퓨터 시스템 시간 기준)
-            cron.add(
-                reservation_method.reserve,
-                name=reservation_method.__class__.__name__,
-                day_of_week="tue,wed,thu",
-                hour=13,
-                minute=18,
-                yyyy_mm_dd=self.yyyy_mm_dd,
-                time_range_model=self.time_range_model,
-            )
-            cron.start()
-
-        elif scheduler == ReservationScheduler.NOW:
-            reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
+        reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)

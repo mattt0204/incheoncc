@@ -1,7 +1,9 @@
 import arrow
+from apscheduler.schedulers.background import BackgroundScheduler
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QStyledItemDelegate
 
+from custom_logger import logger
 from pick_datetime_model import (
     PickDateModel,
     ReservationScheduler,
@@ -24,6 +26,13 @@ class PickDatetimeViewModel(QObject):
         self.end: TimePoint = TimePoint(hour=8, minute=0)
         self.selected_date = ""
         self.load_dates()
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.start()
+        self.session_cron_active = False  # Session CRON 상태
+        self.dom_cron_active = False  # DOM CRON 상태
+        self.day_of_week = "tue,wed,thu"  # 예약 요일
+        self.hour = 9  # 예약 시간(시)
+        self.minute = 0  # 예약 시간(분)
 
     def load_dates(self):
         # 가능한 날짜 선택하게 하기
@@ -66,11 +75,52 @@ class PickDatetimeViewModel(QObject):
                 priority_time=self.priority_time,
             ),
         )
+        reservation.execute(strategy=strategy)
 
-        reservation.execute(
-            strategy=strategy,
-            scheduler=scheduler,
+    def _toggle_cron(
+        self, strategy: ReservationStrategy, job_id: str, active_attr: str
+    ):
+        reservation = Reservation(
+            scraper=self.scraper,
+            yyyy_mm_dd=self.selected_date,
+            time_range_model=TimeRange(
+                start=self.start,
+                end=self.end,
+                priority_time=self.priority_time,
+            ),
         )
+        is_active = getattr(self, active_attr)
+        if not is_active:
+            self.scheduler.add_job(
+                reservation.execute,
+                "cron",
+                id=job_id,
+                day_of_week=self.day_of_week,
+                hour=self.hour,
+                minute=self.minute,
+                replace_existing=True,
+                kwargs={"strategy": strategy},
+            )
+            setattr(self, active_attr, True)
+            logger.info(f"{job_id} 예약 완료")
+            return True  # 등록됨
+        else:
+            self.scheduler.remove_job(job_id)
+            setattr(self, active_attr, False)
+            logger.info(f"{job_id} 예약 취소")
+            return False  # 취소됨
+
+    def toggle_session_cron(self, strategy: ReservationStrategy):
+        return self._toggle_cron(strategy, "session_cron", "session_cron_active")
+
+    def toggle_dom_cron(self, strategy: ReservationStrategy):
+        return self._toggle_cron(strategy, "dom_cron", "dom_cron_active")
+
+    def stop_all_cron(self):
+        """모든 예약을 안전하게 종료"""
+        self.scheduler.remove_all_jobs()
+        self.session_cron_active = False
+        self.dom_cron_active = False
 
 
 class DateWithWeekdayDelegate(QStyledItemDelegate):
