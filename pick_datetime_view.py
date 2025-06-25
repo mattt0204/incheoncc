@@ -170,8 +170,10 @@ class PickDatetimeView(QWidget):
         )
 
     def on_cancel_clicked(self):
+        # TODO: Cron 취소
+
         self.app.quit()
-        # 코드 수정이 필요
+        # TODO: 코드 리팩토링이 필요
         self.view_model.scraper.driver.quit()
 
 
