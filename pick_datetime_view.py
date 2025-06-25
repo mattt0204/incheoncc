@@ -171,6 +171,8 @@ class PickDatetimeView(QWidget):
 
     def on_cancel_clicked(self):
         self.app.quit()
+        # 코드 수정이 필요
+        self.view_model.scraper.driver.quit()
 
 
 # TODO: 시간 레인지 view model의 데이터와 연결
