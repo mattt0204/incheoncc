@@ -37,13 +37,6 @@ def env_path():
     return env_path
 
 
-def resource_path(relative_path):
-    """PyInstaller 환경에서도 리소스 파일 경로를 안전하게 반환"""
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, relative_path)  # type: ignore
-    return os.path.join(os.path.abspath("."), relative_path)
-
-
 def get_log_path():
     if hasattr(sys, "_MEIPASS"):
         # PyInstaller로 빌드된 경우: 실행 파일 위치
