@@ -49,7 +49,5 @@ https://time.navyism.com/?host=www.incheoncc.com
 ```
 
 # 추가 기능 
-
-1. cron 2번 누를 시, job 삭제, UI에 반영
-
+1. 테스트 모드(실제 예약되지 않음)
 

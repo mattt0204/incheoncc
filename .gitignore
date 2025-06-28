@@ -17,3 +17,9 @@ pyvenv.cfg
 *.csv
 
 *.html
+
+build
+
+dist
+
+*.spec

@@ -1,11 +1,13 @@
 import os
 
+from dotenv import load_dotenv
 from PySide6.QtWidgets import QApplication
 
 from custom_logger import logger
 from pick_datetime_view import PickDatetimeView
 from pick_datetime_view_model import PickDatetimeViewModel
 from scraper import IncheonCCScraper
+from user_agent import env_path
 
 
 def load_hand_tels_from_env():
@@ -17,7 +19,7 @@ def load_hand_tels_from_env():
 
 if __name__ == "__main__":
     # 환경변수 확인
-
+    load_dotenv(env_path())
     hand_tel1, hand_tel2, hand_tel3 = load_hand_tels_from_env()
     logger.info("환경변수 확인")
     logger.info(f"HAND_TEL1: {hand_tel1}")
