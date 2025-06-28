@@ -27,7 +27,7 @@ class PickDatetimeViewModel(QObject):
         self.scheduler.start()
         self._session_cron_active = False  # Session CRON 상태
         self._dom_cron_active = False  # DOM CRON 상태
-        self.day_of_week = "tue,wed,thu"  # 예약 요일
+        self.day_of_week = "tue,thu"  # 예약 요일
         self.hour = 9  # 예약 시간(시)
         self.minute = 0  # 예약 시간(분)
 
