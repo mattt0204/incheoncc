@@ -32,7 +32,7 @@ class ReserveMethod(ABC):
         )
 
     @abstractmethod
-    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange, is_test: bool):
         pass
 
     def _log_reservation_response(self, response_text, idx, payload):
@@ -65,9 +65,10 @@ class ReserveMethod(ABC):
 # 1. DoM API 방식 (셀레니움 등)
 class DomApiReservation(ReserveMethod):
 
-    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange, is_test: bool):
         logger.info("DOM API를 이용하여 예약하기")
-        raise Exception("test")
+        if is_test:
+            raise Exception("test 모드는 실제 예약하지 않습니다.")
 
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
@@ -296,9 +297,10 @@ class DomApiReservation(ReserveMethod):
 class SessionPostReservation(ReserveMethod):
     """Session Post 방식으로 예약을 진행합니다."""
 
-    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
+    def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange, is_test: bool):
         logger.info("서버에 직접 요청 방식으로 예약하기")
-        raise Exception("test")
+        if is_test:
+            raise Exception("test 모드는 실제 예약하지 않습니다.")
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
         tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
@@ -384,10 +386,11 @@ class Reservation:
     def execute(
         self,
         strategy: ReservationStrategy,
+        is_test: bool,
     ):
         if strategy == ReservationStrategy.SESSION:
             reservation_method = SessionPostReservation(self.scraper.driver)
         elif strategy == ReservationStrategy.DOM:
             reservation_method = DomApiReservation(self.scraper.driver)
 
-        reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model)
+        reservation_method.reserve(self.yyyy_mm_dd, self.time_range_model, is_test)

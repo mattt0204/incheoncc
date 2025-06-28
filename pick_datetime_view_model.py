@@ -4,13 +4,7 @@ from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QStyledItemDelegate
 
 from custom_logger import logger
-from pick_datetime_model import (
-    PickDateModel,
-    ReservationScheduler,
-    ReservationStrategy,
-    TimePoint,
-    TimeRange,
-)
+from pick_datetime_model import PickDateModel, ReservationStrategy, TimePoint, TimeRange
 from reservation import Reservation
 from scraper import IncheonCCScraper
 
@@ -77,13 +71,15 @@ class PickDatetimeViewModel(QObject):
         self.priority_time = priority_time
 
     def reserve_course(
-        self, strategy: ReservationStrategy, scheduler: ReservationScheduler
+        self,
+        strategy: ReservationStrategy,
+        is_test: bool,
     ):
 
         try:
             self.scraper.go_to_reservation_page()
         except Exception as e:
-            # 새롭게 만들어서 driver 초기화
+            # 다시 시도할 때, 새롭게 만들어서 driver 초기화
             self.scraper = IncheonCCScraper()
             self.scraper.login()
             self.scraper.go_to_reservation_page()
@@ -98,10 +94,14 @@ class PickDatetimeViewModel(QObject):
                 priority_time=self.priority_time,
             ),
         )
-        reservation.execute(strategy=strategy)
+        reservation.execute(strategy=strategy, is_test=is_test)
 
     def _toggle_cron(
-        self, strategy: ReservationStrategy, job_id: str, active_attr: str
+        self,
+        strategy: ReservationStrategy,
+        job_id: str,
+        active_attr: str,
+        is_test: bool,
     ):
         reservation = Reservation(
             scraper=self.scraper,
@@ -122,7 +122,7 @@ class PickDatetimeViewModel(QObject):
                 hour=self.hour,
                 minute=self.minute,
                 replace_existing=True,
-                kwargs={"strategy": strategy},
+                kwargs={"strategy": strategy, "is_test": is_test},
             )
             setattr(self, active_attr, True)
             logger.info(f"{job_id} 예약 완료")
@@ -133,11 +133,13 @@ class PickDatetimeViewModel(QObject):
             logger.info(f"{job_id} 예약 취소")
             return False  # 취소됨
 
-    def toggle_session_cron(self, strategy: ReservationStrategy):
-        return self._toggle_cron(strategy, "session_cron", "session_cron_active")
+    def toggle_session_cron(self, strategy: ReservationStrategy, is_test: bool):
+        return self._toggle_cron(
+            strategy, "session_cron", "session_cron_active", is_test
+        )
 
-    def toggle_dom_cron(self, strategy: ReservationStrategy):
-        return self._toggle_cron(strategy, "dom_cron", "dom_cron_active")
+    def toggle_dom_cron(self, strategy: ReservationStrategy, is_test: bool):
+        return self._toggle_cron(strategy, "dom_cron", "dom_cron_active", is_test)
 
     def stop_all_cron(self):
         """모든 예약을 안전하게 종료"""

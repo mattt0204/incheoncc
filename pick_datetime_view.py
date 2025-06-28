@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QHBoxLayout,
     QLabel,
@@ -8,7 +9,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from pick_datetime_model import ReservationScheduler, ReservationStrategy
+from pick_datetime_model import ReservationStrategy
 from pick_datetime_view_model import DateWithWeekdayDelegate, PickDatetimeViewModel
 
 
@@ -18,6 +19,7 @@ class PickDatetimeView(QWidget):
         self.app = app
         self.view_model = view_model
         self.view_model.setParent(self)  # 이 줄 추가!
+        self.is_test = False
         self.setup_ui()
 
     def update_session_button(self, is_active):
@@ -80,6 +82,7 @@ class PickDatetimeView(QWidget):
         self.priority_minute_combo.setCurrentIndex(30)
 
     def init_button_section(self):
+        self.is_test_checkbox = QCheckBox("테스트 모드(실제 예약하지 않음)")
         self.cancel_button = QPushButton("취소")
         self.cancel_layout = QHBoxLayout()
         self.cancel_layout.addStretch()
@@ -115,6 +118,7 @@ class PickDatetimeView(QWidget):
         self.main_layout.addWidget(self.end_minute_label)
         self.main_layout.addWidget(self.end_minute_combo)
 
+        self.main_layout.addWidget(self.is_test_checkbox)
         self.main_layout.addLayout(self.action_layout)
         self.main_layout.addSpacing(10)  # 버튼 사이 여백
         self.main_layout.addLayout(self.cancel_layout)
@@ -145,7 +149,7 @@ class PickDatetimeView(QWidget):
         selected_end_minute = self.end_minute_combo.currentIndex()
         selected_priority_hour = self.priority_hour_combo.currentIndex()
         selected_priority_minute = self.priority_minute_combo.currentIndex()
-
+        self.is_test = self.is_test_checkbox.isChecked()
         self.view_model.set_selected_date(selected_yyyy_mm_dd)
         self.view_model.set_start_time(selected_start_hour, selected_start_minute)
         self.view_model.set_end_time(selected_end_hour, selected_end_minute)
@@ -155,23 +159,19 @@ class PickDatetimeView(QWidget):
 
     def on_session_now(self):
         self.__set_selected_info()
-        self.view_model.reserve_course(
-            ReservationStrategy.SESSION, ReservationScheduler.NOW
-        )
+        self.view_model.reserve_course(ReservationStrategy.SESSION, self.is_test)
 
     def on_session_cron(self):
         self.__set_selected_info()
-        self.view_model.toggle_session_cron(ReservationStrategy.SESSION)
+        self.view_model.toggle_session_cron(ReservationStrategy.SESSION, self.is_test)
 
     def on_dom_now(self):
         self.__set_selected_info()
-        self.view_model.reserve_course(
-            ReservationStrategy.DOM, ReservationScheduler.NOW
-        )
+        self.view_model.reserve_course(ReservationStrategy.DOM, self.is_test)
 
     def on_dom_cron(self):
         self.__set_selected_info()
-        self.view_model.toggle_dom_cron(ReservationStrategy.DOM)
+        self.view_model.toggle_dom_cron(ReservationStrategy.DOM, self.is_test)
 
     def on_cancel_clicked(self):
         self.view_model.stop_all_cron()  # ViewModel에서 모든 스케줄러 종료
