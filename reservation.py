@@ -35,6 +35,32 @@ class ReserveMethod(ABC):
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange):
         pass
 
+    def _log_reservation_response(self, response_text, idx, payload):
+        decoded_text = decode_unicode_url(response_text)
+        if "OK" in response_text:
+            logger.info(
+                f"{idx}번째 시도, {payload['pointtime']} / {payload['pointid']} 예약 성공"
+            )
+            return True
+        elif "오류" in decoded_text:
+            logger.info(
+                f"{idx}번째 시도, {payload['pointtime']} / {payload['pointid']} 예약 실패, 없는 시간"
+            )
+        elif "동시예약" in decoded_text:
+            logger.info(
+                f"{idx}번째 시도, {payload['pointtime']} / {payload['pointid']} 예약 실패, 동시예약으로 인한 실패"
+            )
+        elif "다른 곳에서 회원님의 아이디로 로그인 되었습니다." in decoded_text:
+            logger.info(
+                f"{idx}번째 시도, {payload['pointtime']} / {payload['pointid']} 예약 실패, 이중 로그인로 인한 실패"
+            )
+        else:
+            logger.info(
+                f"{idx}번째 시도, {payload['pointtime']} / {payload['pointid']} 예약 실패, 원인이 밝혀지지 않은 실패"
+            )
+            logger.info(f"response.text: {decoded_text}")
+        return False
+
 
 # 1. DoM API 방식 (셀레니움 등)
 class DomApiReservation(ReserveMethod):
@@ -76,34 +102,8 @@ class DomApiReservation(ReserveMethod):
                     payload = self.__make_payload(yyyy_mm_dd, course)
                     response = session.post(self.reserve_ok_url, data=payload)
                     idx = 2
-                    if "OK" in response.text:
-                        logger.info(
-                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 성공"
-                        )
-                        # while 문 종료
+                    if self._log_reservation_response(response.text, idx, payload):
                         break
-                    elif "오류" in decode_unicode_url(response.text):
-                        logger.info(
-                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 없는 시간"
-                        )
-                    elif "동시예약" in decode_unicode_url(response.text):
-                        logger.info(
-                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 동시예약으로 인한 실패"
-                        )
-                    elif (
-                        "다른 곳에서 회원님의 아이디로 로그인 되었습니다."
-                        in decode_unicode_url(response.text)
-                    ):
-                        logger.info(
-                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 이중 로그인로 인한 실패"
-                        )
-                    else:
-                        logger.info(
-                            f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 원인이 밝혀지지 않은 실패"
-                        )
-                        logger.info(
-                            f"response.text: {decode_unicode_url(response.text)}"
-                        )
                     idx += 1
 
         # 성공할 때만 실행
@@ -311,32 +311,9 @@ class SessionPostReservation(ReserveMethod):
                     f"{payload["pointdate"]}/{payload["pointtime"]}/{payload["pointid"]}"
                 )
                 response = session.post(self.reserve_ok_url, data=payload)
-                if "OK" in response.text:
-                    logger.info(
-                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 성공"
-                    )
+                if self._log_reservation_response(response.text, idx, payload):
                     is_success = True
                     break
-                elif "오류" in decode_unicode_url(response.text):
-                    logger.info(
-                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 없는 시간"
-                    )
-                elif "동시예약" in decode_unicode_url(response.text):
-                    logger.info(
-                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 동시예약으로 인한 실패"
-                    )
-                elif (
-                    "다른 곳에서 회원님의 아이디로 로그인 되었습니다."
-                    in decode_unicode_url(response.text)
-                ):
-                    logger.info(
-                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 이중 로그인로 인한 실패"
-                    )
-                else:
-                    logger.info(
-                        f"{idx}번째 시도, {payload["pointtime"]} / {payload["pointid"]} 예약 실패, 원인이 밝혀지지 않은 실패"
-                    )
-                    logger.info(f"response.text: {decode_unicode_url(response.text)}")
                 idx += 1
             if is_success:
                 break
