@@ -68,3 +68,21 @@ $ pyinstaller --log-level=DEBUG --add-data "user_agent_list.txt:." --add-data ".
 # windows
 $ pyinstaller -w --log-level=DEBUG --add-data "user_agent_list.txt:." --add-data ".env:." main.py
 ```
+
+
+window에서 설치
+```
+git clone 
+
+# 
+.venv\Scripts\activate
+
+# 가상환경 활성화 확인
+python -c "import sys; print(sys.executable)"
+>> ...\incheoncc\.venv\Scripts\python.exe
+
+# 라이브러리 설치
+$ uv sync 
+
+제공 받은 환경변수를 .env file 에 붙여넣기
+```
