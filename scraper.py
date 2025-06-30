@@ -74,8 +74,7 @@ class IncheonCCScraper:
         login_button = self.driver.find_element(By.CLASS_NAME, "bt_login")
         login_button.click()
 
-        if EC.alert_is_present():
-            self.__handle_alert()
+        self.__handle_alert()
         time.sleep(1)
         self.__close_popup_until_one()
 
