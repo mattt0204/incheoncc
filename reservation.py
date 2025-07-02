@@ -67,8 +67,6 @@ class DomApiReservation(ReserveMethod):
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange, is_test: bool):
         logger.info("DOM API를 이용하여 예약하기")
-        if is_test:
-            raise Exception("test 모드는 실제 예약하지 않습니다.")
 
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
@@ -88,6 +86,10 @@ class DomApiReservation(ReserveMethod):
             raise RuntimeError(f"🛑 {yyyy_mm_dd} 날짜가 예약 불가능 상태입니다!")
 
         try:
+            if is_test:
+                logger.info(f"test 모드는 실제 예약하지 않습니다.")
+                raise Exception("test 모드는 실제 예약하지 않습니다.")
+
             courses_dq = deque(sorted_courses)
             course = courses_dq.popleft()
             self.__click_button_in_listpage(course)
@@ -101,6 +103,10 @@ class DomApiReservation(ReserveMethod):
                     # TODO: 예약 실패시 세션 방식으로 처리, while 문 처리
                     session = self.__preload_session()
                     payload = self.__make_payload(yyyy_mm_dd, course)
+                    if is_test:
+                        logger.info(f"test 모드는 실제 예약하지 않습니다.")
+                        raise Exception("test 모드는 실제 예약하지 않습니다.")
+
                     response = session.post(self.reserve_ok_url, data=payload)
                     idx = 2
                     if self._log_reservation_response(response.text, idx, payload):
@@ -299,8 +305,7 @@ class SessionPostReservation(ReserveMethod):
 
     def reserve(self, yyyy_mm_dd: str, time_range_model: TimeRange, is_test: bool):
         logger.info("서버에 직접 요청 방식으로 예약하기")
-        if is_test:
-            raise Exception("test 모드는 실제 예약하지 않습니다.")
+
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
         tps_priority = time_range_model.make_sorted_all_timepoints_by_priority()
@@ -312,6 +317,9 @@ class SessionPostReservation(ReserveMethod):
                 logger.info(
                     f"{payload["pointdate"]}/{payload["pointtime"]}/{payload["pointid"]}"
                 )
+                if is_test:
+                    logger.info(f"test 모드는 실제 예약하지 않습니다.")
+                    raise Exception("test 모드는 실제 예약하지 않습니다.")
                 response = session.post(self.reserve_ok_url, data=payload)
                 if self._log_reservation_response(response.text, idx, payload):
                     is_success = True
