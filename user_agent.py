@@ -37,6 +37,19 @@ def env_path():
     return env_path
 
 
+# .env 파일이 실행 파일과 같은 폴더에 있다고 가정
+def holiday_path():
+    if hasattr(sys, "_MEIPASS"):
+        # PyInstaller로 빌드된 경우
+        env_path = os.path.join(
+            os.path.dirname(sys.executable), "_internal/holidays.json"
+        )
+    else:
+        # 개발 환경
+        env_path = os.path.join(os.path.abspath("."), ".holidays.json")
+    return env_path
+
+
 def get_log_path():
     if hasattr(sys, "_MEIPASS"):
         # PyInstaller로 빌드된 경우: 실행 파일 위치

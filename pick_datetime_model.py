@@ -6,6 +6,8 @@ from typing import List
 import arrow
 from PySide6.QtCore import QAbstractListModel, Qt
 
+from user_agent import holiday_path
+
 
 @dataclass
 class TimePoint:
@@ -141,7 +143,7 @@ class PickDateModel(QAbstractListModel):
         saturday_of_3rd_weeks_yyyymmdd = tuesday.shift(days=24).strftime("%Y%m%d")
         holidays_of_3rd_week: list[str] = []
 
-        with open("holidays.json", "r", encoding="utf-8") as f:
+        with open(holiday_path(), "r", encoding="utf-8") as f:
             dates = json.load(f)
             for date in dates:
                 if (
