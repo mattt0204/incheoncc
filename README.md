@@ -64,7 +64,7 @@ CRON Job 설정
 # Pyinstaller 로 실행 파일 만들기
 ```
 # mac os
-$ pyinstaller --log-level=DEBUG --add-data "user_agent_list.txt:." --add-data ".env:." --add-data "holidays.json:."main.py
+$ pyinstaller --log-level=DEBUG --add-data "user_agent_list.txt:." --add-data ".env:." --add-data "holidays.json:." main.py
 # windows
 $ pyinstaller -w --log-level=DEBUG --add-data "user_agent_list.txt:." --add-data ".env:." --add-data "holidays.json:." main.py
 ```
