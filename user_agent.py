@@ -41,13 +41,11 @@ def env_path():
 def holiday_path():
     if hasattr(sys, "_MEIPASS"):
         # PyInstaller로 빌드된 경우
-        env_path = os.path.join(
-            os.path.dirname(sys.executable), "_internal/holidays.json"
-        )
+        path = os.path.join(os.path.dirname(sys.executable), "_internal/holidays.json")
     else:
         # 개발 환경
-        env_path = os.path.join(os.path.abspath("."), ".holidays.json")
-    return env_path
+        path = os.path.join(os.path.abspath("."), ".holidays.json")
+    return path
 
 
 def get_log_path():
