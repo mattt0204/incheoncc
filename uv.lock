@@ -326,6 +326,9 @@ dependencies = [
     { name = "apscheduler" },
     { name = "arrow" },
     { name = "jupyter" },
+    { name = "jupyterlab" },
+    { name = "jupyterlab-lsp" },
+    { name = "lckr-jupyterlab-variableinspector" },
     { name = "loguru" },
     { name = "notebook" },
     { name = "pyinstaller" },
@@ -340,6 +343,9 @@ requires-dist = [
     { name = "apscheduler", specifier = ">=3.11.0" },
     { name = "arrow", specifier = ">=1.3.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "jupyterlab", specifier = ">=4.4.2" },
+    { name = "jupyterlab-lsp", specifier = ">=5.1.1" },
+    { name = "lckr-jupyterlab-variableinspector", specifier = ">=3.2.4" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "notebook", specifier = ">=7.4.2" },
     { name = "pyinstaller", specifier = ">=6.14.1" },
@@ -735,6 +741,19 @@ wheels = [
 ]
 
 [[package]]
+name = "jupyterlab-lsp"
+version = "5.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jupyter-lsp" },
+    { name = "jupyterlab" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/cb/d0172429ca322a006d835451c9d0d1f21744ebdacd5053e71d7dae0ca8af/jupyterlab_lsp-5.1.1.tar.gz", hash = "sha256:7233ca73ea0f2da8598ea33d84c243635466d1af70ddce8cd8336ef95dca08bf", size = 760482, upload-time = "2025-05-29T08:08:54.302Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/3b/c09f864400206fef1ad7f78cf2f96fd392efbf195ccb4c1c9ee122e9dca1/jupyterlab_lsp-5.1.1-py3-none-any.whl", hash = "sha256:9af980888230907432028ebd96068997d4336aef9850e7f81c3492f2e808bf80", size = 1565481, upload-time = "2025-05-29T08:08:50.578Z" },
+]
+
+[[package]]
 name = "jupyterlab-pygments"
 version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -768,6 +787,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b9/7d/160595ca88ee87ac6ba95d82177d29ec60aaa63821d3077babb22ce031a5/jupyterlab_widgets-3.0.15.tar.gz", hash = "sha256:2920888a0c2922351a9202817957a68c07d99673504d6cd37345299e971bb08b", size = 213149, upload-time = "2025-05-05T12:32:31.004Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/43/6a/ca128561b22b60bd5a0c4ea26649e68c8556b82bc70a0c396eebc977fe86/jupyterlab_widgets-3.0.15-py3-none-any.whl", hash = "sha256:d59023d7d7ef71400d51e6fee9a88867f6e65e10a4201605d2d7f3e8f012a31c", size = 216571, upload-time = "2025-05-05T12:32:29.534Z" },
+]
+
+[[package]]
+name = "lckr-jupyterlab-variableinspector"
+version = "3.2.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/50/1d/4f0ee3ee9cfafdedf94ea8ac9b67081e708806ef420531a80c5e7143534d/lckr_jupyterlab_variableinspector-3.2.4.tar.gz", hash = "sha256:9bad61401ef24cbdd4bc000d882038bbdd9d79550f624bd1930978dd56dddf7b", size = 1438538, upload-time = "2024-09-05T09:46:41.793Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/71/6bdb50567c5255ae9f641bee00d2f9573cca9b195a3ef856a472411d1b89/lckr_jupyterlab_variableinspector-3.2.4-py3-none-any.whl", hash = "sha256:36c529dc07f258f66ebcbb4fb4551e410ccc039a6ecc7ad693bbedc79f4e4b12", size = 140378, upload-time = "2024-09-05T09:46:39.767Z" },
 ]
 
 [[package]]
