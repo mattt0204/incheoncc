@@ -10,10 +10,12 @@ from user_agent import get_random_user_agent
 
 
 class GolfReservationMonitor:
-    def __init__(self, selenium_cookies):
-        self.hour = 8
-        self.minute = 59
-        self.second = 50
+    def __init__(
+        self, selenium_cookies: list[dict], hour: int, minute: int, second: int
+    ):
+        self.hour = hour
+        self.minute = minute
+        self.second = second
         self.base_url = "https://www.incheoncc.com:1436"
         self.session = requests.Session()
         # 기본 헤더 설정 (실제 브라우저처럼 보이게)

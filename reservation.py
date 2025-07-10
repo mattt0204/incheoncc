@@ -70,7 +70,12 @@ class DomApiReservation(ReserveMethod):
 
         if not yyyy_mm_dd:
             raise ValueError("날짜가 없습니다.")
-        monitor = GolfReservationMonitor(self.driver.get_cookies())
+        monitor = GolfReservationMonitor(
+            self.driver.get_cookies(),
+            hour=8,
+            minute=59,
+            second=50,
+        )
 
         # 1. 캘린더 모니터링 하기
         if not monitor.monitor_is_alive_date(yyyy_mm_dd):
