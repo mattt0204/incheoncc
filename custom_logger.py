@@ -1,18 +1,22 @@
+import logging
+import sys
+
 import arrow
-from loguru import logger as __logger
 
+# 로그 포맷 정의
+LOG_FORMAT = "%(asctime)s,%(levelname)s,%(message)s"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-def format_record(record):
-    """이 함수 이상한데 2가지 일을 하네, 그리고 곧바로"""
-    record["time"] = arrow.now().strftime("%Y-%m-%d %H:%M:%S.%f%z")
-    message = record["message"].replace('"', "'")
-    record["message"] = f'"{message}"'
-    return True
+# root logger 사용
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
+# 콘솔 핸들러
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))
+logger.addHandler(console_handler)
 
-# csv 파일에 추가
-__logger.add("./logs.csv", format="{time},{level},{message}", filter=format_record)
-
-
-# logger 인스턴스 생성 및 설정
-logger = __logger.bind()  # 새로운 logger 인스턴스 생성
+# 파일 핸들러 (CSV 포맷)
+file_handler = logging.FileHandler("./logs.csv")
+file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))
+logger.addHandler(file_handler)

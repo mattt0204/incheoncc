@@ -119,8 +119,8 @@ class GolfReservationMonitor:
             bool: True if 날짜가 live 상태가 됨, False if 시간 초과 또는 모니터링 불가
 
         모니터링 주기:
-        - ~ 8시 59분 50초: 1분 간격
-        - 8시 59분 50초 ~ : 1초 간격
+        - ~ 기준 시각: 1분 간격
+        - 기준 시각 ~ : 1초 간격
         """
 
         start_time = datetime.datetime.now()
@@ -129,8 +129,8 @@ class GolfReservationMonitor:
         logger.info(f"🏌️ 골프 예약 모니터링 시작")
         logger.info(f"📅 대상 날짜: {yyyymmdd}")
         logger.info(f"⏰ 모니터링 시간:")
-        logger.info(f"   • 00:00 ~ 08:59:50 → 1분 간격")
-        logger.info(f"   • 08:59:50 ~ 24:00 → 1초 간격")
+        logger.info(f"   • 00:00 ~ {self.hour}:{self.minute}:{self.second} → 1분 간격")
+        logger.info(f"   • {self.hour}:{self.minute}:{self.second} ~ 24:00 → 1초 간격")
         logger.info(f"   • 최대 모니터링 시간: {timeout_minutes}분")
         logger.info(f"   • Ctrl+C로 언제든 중단 가능")
         logger.info("-" * 50)
@@ -154,7 +154,7 @@ class GolfReservationMonitor:
 
                 # 중복 체크 방지 (같은 시간대에 여러 번 체크하지 않음) 8시에 확인 필요
                 if wait_seconds == 60:
-                    # 다음 체크 예정 시간이 8:59:50을 넘기면, 8:59:50에 맞춰서 sleep
+                    # 다음 체크 예정 시간이 기준 시각을 넘기면, 기준시각에 맞춰서 sleep
                     now = datetime.datetime.now()
                     next_check = now + datetime.timedelta(seconds=wait_seconds)
                     switch_time = now.replace(
